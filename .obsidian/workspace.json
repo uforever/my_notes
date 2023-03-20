@@ -4,37 +4,15 @@
     "type": "split",
     "children": [
       {
-        "id": "32377e00ce299d16",
+        "id": "b09a52d2ec56dc59",
         "type": "tabs",
         "children": [
           {
-            "id": "d8f6218424b55f3e",
+            "id": "e5f4ffcb08dedf8c",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "03 Awesome Command Line/11 安全工具.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          }
-        ]
-      },
-      {
-        "id": "afa06810bcfdc9c4",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "5b010430c5219b2c",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "05 Penetration Test/04 Web应用攻击.md",
-                "mode": "source",
-                "source": false
-              }
+              "type": "empty",
+              "state": {}
             }
           }
         ]
@@ -103,7 +81,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "03 Awesome Command Line/11 安全工具.md",
+                "file": "05 Penetration Test/04 Web应用攻击.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -120,7 +98,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "03 Awesome Command Line/11 安全工具.md",
+                "file": "05 Penetration Test/04 Web应用攻击.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -143,7 +121,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "03 Awesome Command Line/11 安全工具.md"
+                "file": "05 Penetration Test/04 Web应用攻击.md"
               }
             }
           }
@@ -154,9 +132,35 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "d8f6218424b55f3e",
+  "left-ribbon": {
+    "hiddenItems": {
+      "canvas:新建白板": false,
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false
+    }
+  },
+  "active": "0784870a8a96b129",
   "lastOpenFiles": [
+    "07 More A&D/04 Crypto.md",
+    "07 More A&D/05 Mobile.md",
+    "07 More A&D/03 Reverse.md",
+    "07 More A&D/02 Pwn.md",
+    "07 More A&D/01 Misc.md",
+    "05 Penetration Test/08 修改漏洞利用.md",
+    "05 Penetration Test/09 传输后门.md",
+    "05 Penetration Test/10 杀毒规避.md",
+    "05 Penetration Test/11 权限提升.md",
+    "05 Penetration Test/17 内网渗透.md",
+    "05 Penetration Test/18 破解.md",
+    "05 Penetration Test/19 动态分析.md",
+    "05 Penetration Test/20 CVE.md",
+    "06 Practices/01 Medium_socialnetwork.md",
     "05 Penetration Test/04 Web应用攻击.md",
+    "04 Excellent Graphical Tools/01 跨平台工具.md",
+    "06 Practices/14 Nagini.md",
     "03 Awesome Command Line/11 安全工具.md"
   ]
 }

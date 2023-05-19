@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "cc4a627f83315b04",
+        "id": "8475764be52f4753",
         "type": "tabs",
         "children": [
           {
-            "id": "15b3c0345d9b7473",
+            "id": "40f27db956cb3a62",
             "type": "leaf",
             "state": {
               "type": "empty",
@@ -89,7 +89,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "collapseAll": false,
+                "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
                 "showSearch": false,
@@ -129,12 +129,12 @@
               "state": {}
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 301.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -148,6 +148,27 @@
   },
   "active": "0784870a8a96b129",
   "lastOpenFiles": [
+    "08 Rust/02 基础语法.md",
+    "08 Rust/99 练习.md",
+    "08 Rust/01 入门.md",
+    "Pasted image 20230519150816.png",
+    "Pasted image 20230519150813.png",
+    "01 Obsidian/常用语法.md",
+    "02 Neovim/01 基础配置.md",
+    "08 Rust",
+    "07 More A&D/未命名",
+    "05 Penetration Test/11 权限提升.md",
+    "06 practices/04 AdmX_new.md",
+    "05 Penetration Test/04 Web应用攻击.md",
+    "06 practices/23 Raven2.md",
+    "03 Awesome Command Line/11 安全工具.md",
+    "05 Penetration Test/20 CVE.md",
+    "05 Penetration Test/02 主动信息收集.md",
+    "06 practices/01 Medium_socialnetwork.md",
+    "06 practices/02 easy_cloudantivirus.md",
+    "06 practices/21 Cereal.md",
+    "06 practices/12 Fawkes.md",
+    "05 Penetration Test/10 杀毒规避.md",
     "07 More A&D/05 Mobile.md",
     "05 Penetration Test/01 被动信息收集.md",
     "07 More A&D/01 Misc.md",
@@ -156,25 +177,8 @@
     "07 More A&D/04 Crypto.md",
     "03 Awesome Command Line/04 文本处理.md",
     "06 practices/03 Chronos.md",
-    "05 Penetration Test/04 Web应用攻击.md",
     "未命名.canvas",
-    "06 practices/01 Medium_socialnetwork.md",
     "assets/screenshot.png",
-    "04 Excellent Graphical Tools/01 跨平台工具.md",
-    "06 practices/02 easy_cloudantivirus.md",
-    "06 practices/21 Cereal.md",
-    "06 practices/25 DarkHole2.md",
-    "06 practices/07 Hacker_Kid.md",
-    "03 Awesome Command Line/11 安全工具.md",
-    "05 Penetration Test/07 定位公共漏洞.md",
-    "06 practices/06 EvilBox1.md",
-    "03 Awesome Command Line/09 网络工具.md",
-    "05 Penetration Test/11 权限提升.md",
-    "06 practices/08 y0usef.md",
-    "05 Penetration Test/03 漏洞扫描.md",
-    "05 Penetration Test/02 主动信息收集.md",
-    "06 practices/04 AdmX_new.md",
-    "06 practices/18 narak.md",
-    "05 Penetration Test/18 破解.md"
+    "04 Excellent Graphical Tools/01 跨平台工具.md"
   ]
 }

@@ -3,9 +3,21 @@
 1. 证书（安装到系统CA目录）
 
 ```Shell
+# 查看证书信息
+# PEM
+openssl x509 -in ca.crt -text -noout
+# DER
+openssl x509 -inform DER -in ca.crt -text -noout
+
 # DER格式需要先进行转换
-# CRT格式不需要
+# PEM格式不需要
 openssl x509 -inform DER -in cacert.der -out cacert.pem
+
+# 提取公钥
+openssl x509 -in ca.crt -pubkey -noout -out ca.pub
+
+# 反向转换
+openssl x509 -outform der -in yak.pem -out yak.der
 
 # 计算哈希
 openssl x509 -subject_hash_old -in cacert.pem | head -1
@@ -216,4 +228,115 @@ dexdump -d Hello.dex
 
 ```
 invoke-static {vXX}, Lcom/mtools/LogUtils;->v(Ljava/lang/Object;)V
+```
+### Frida逆向
+
+```shell
+# 进程列表
+frida-ps -U
+# 应用列表
+frida-ps -Uai
+# 运行中的应用
+frida-ps -Ua
+# 列出所有设备
+frida-ls-devices
+# 跟踪本机API
+frida-trace -U Twitter -i "*URL*"
+# attach模式注入
+frida -U -l hook.js com.example.demo
+```
+
+objection
+
+```shell
+# 连接应用
+objection -g "APP名" explore
+# 列出类名 结果很长 一般不用 用搜索
+android hooking list classes
+# 搜索类名
+android hooking search classes emulator
+# 列出类的方法
+android hooking list class_methods android.hardware.display.DisplayManager
+# Hook 方法 监听参数、调用堆栈、返回值
+android hooking watch class_method com.bonc.moveportal.util.CheckEmulatorUtil.a --dump-args --dump-backtrace --dump-return
+# 列出 Hook
+jobs list
+# 结束 Hook
+jobs kill 124069
+# Hook 整个类
+android hooking watch class java.io.File
+# 堆上搜索实例
+android heap search instances com.android.settings.DisplaySettings
+# 调用无参实例方法
+android heap execute 0x2526 getPreferenceScreenResId
+# 调用有参实例方法
+android heap execute 0x2526
+# demo.instanceFunc(x,y) 调用
+
+# Spawn方式Hook
+objection -g "com.bonc.moveportal" explore --startup-command 'android hooking watch class java.io.File'
+# 搜索内存中的方法
+android hooking search methods CheckIsNotRealPhone
+# 列出Activity
+android hooking list activities
+# 列出Service
+android hooking list services
+
+# 查看命令帮助
+help env
+```
+
+demo
+
+```python
+import frida, sys
+
+def on_message(message, data):
+    if message['type'] == 'send':
+        print("[*] {0}".format(message['payload']))
+    else:
+        print(message)
+
+jscode = """
+Java.perform(() => {
+  // 开始定义Hook
+  console.log("1. Start Hooking");
+
+  // 指定类
+  const MainActivity = Java.use('com.example.seccon2015.rock_paper_scissors.MainActivity');
+  console.log("2. Class Found");
+
+  // 指定函数
+  const onClick = MainActivity.onClick;
+  console.log("3. Function Found");
+  
+  onClick.implementation = function (v) {
+    // 显示函数被调用的信息
+    send('onClick');
+
+    // 调用原始函数
+    onClick.call(this, v);
+
+    // Set our values after running the original onClick handler
+    // 注意这里使用.value来设置值 而不是直接赋值
+    this.m.value = 0;
+    this.n.value = 1;
+    this.cnt.value = 999;
+
+    // Log to the console that it's done, and we should have the flag!
+    console.log('Done:' + JSON.stringify(this.cnt));
+  };
+});
+"""
+
+# 通过USB连接到设备 指定进程
+process = frida.get_usb_device().attach('com.example.seccon2015.rock_paper_scissors')
+# 加载js脚本
+script = process.create_script(jscode)
+# 也可以从JS文件中加载
+# script = process.create_script(open('hook.js', 'r').read())
+script.on('message', on_message)
+print('[*] Running CTF')
+script.load()
+sys.stdin.read()
 ```

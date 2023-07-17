@@ -15,6 +15,7 @@ openssl x509 -inform DER -in cacert.der -out cacert.pem
 
 # 提取公钥
 openssl x509 -in ca.crt -pubkey -noout -out ca.pub
+openssl x509 -inform DER -in public_key -pubkey -noout -out pubkey.pem
 
 # 反向转换
 openssl x509 -outform der -in yak.pem -out yak.der
@@ -339,4 +340,246 @@ script.on('message', on_message)
 print('[*] Running CTF')
 script.load()
 sys.stdin.read()
+```
+
+spawn
+
+```python
+import frida, sys
+
+def on_message(message, data):
+    if message['type'] == 'send':
+        print("[*] {0}".format(message['payload']))
+    else:
+        print(message)
+
+# 通过USB连接到设备 指定进程
+device = frida.get_usb_device()
+process = device.spawn(["com.example.application"])
+session = device.attach(process)
+# 加载JS脚本 hook.js
+with open('hook.js', 'r', encoding='utf-8') as f:
+    jscode = f.read()
+    script = session.create_script(jscode)
+
+script.on('message', on_message)
+print('[*] Hooking')
+script.load()
+device.resume(process)
+sys.stdin.read()
+```
+
+```javascript
+Java.perform(() => {
+    // 开始定义Hook
+    console.log("1. Start Hooking");
+    var application = Java.use("android.app.Application");
+    application.attach.overload("android.content.Context").implementation = function(context) {
+        console.log("2. Hooking attach");
+        // 执行原来的方法
+        this.attach(context);
+        var classloader = context.getClassLoader();
+        Java.classFactory.loader = classloader;
+        var targetClass = Java.classFactory.use("com.example.application.MyClass");
+
+        targetClass.a.overload().implementation = function() {
+            console.log("3. Hooking a");
+        }
+    }
+});
+```
+
+Java层自吐算法
+
+```javascript
+function bin2hex(array) {
+    var result = [];
+    var len = array.length;
+    for (var i = 0; i < len; i++) {
+        result.push(('0' + (array[i] & 0xFF).toString(16)).slice(-2));
+    }
+    return result.join('');
+}
+
+function bin2utf8(array) {
+    var result = [];
+    for (var i = 0; i < array.length; i++) {
+        result.push('%' + ('0' + (array[i] & 0xFF).toString(16)).slice(-2));
+    }
+    return decodeURIComponent(result.join(''));
+}
+
+function bin2base64(array) {
+    var base64chars = [];
+    var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    var len = array.length;
+
+    for (var i = 0; i < len; i += 3) {
+        var byte1 = array[i] & 0xFF;
+        var byte2 = array[i + 1] & 0xFF;
+        var byte3 = array[i + 2] & 0xFF;
+
+        var triplet = (byte1 << 16) | (byte2 << 8) | byte3;
+
+        for (var j = 0; (j < 4) && (i + j * 0.75 < len); j++) {
+            base64chars.push(alphabet.charAt((triplet >> (6 * (3 - j))) & 0x3F));
+        }
+    }
+
+    var padding = alphabet.charAt(64);
+    if (padding) {
+        while (base64chars.length % 4) {
+            base64chars.push(padding);
+        }
+    }
+
+    return base64chars.join('');
+}
+
+Java.perform(function () {
+    console.log("---- Start hooking ----");
+
+    Java.use('javax.crypto.spec.SecretKeySpec').$init.overload('[B', 'java.lang.String').implementation = function (key, spec) {
+        console.log("密钥: " + bin2base64(key));
+        return this.$init(key, spec);
+    };
+
+    Java.use('javax.crypto.Cipher')['getInstance'].overload('java.lang.String').implementation = function (spec) {
+        console.log("加密类型: " + spec);
+        return this.getInstance(spec);
+    };
+
+    Java.use('javax.crypto.Cipher')['doFinal'].overload('[B').implementation = function (data) {
+        console.log("---- crypto ----");
+        console.log("输入数据: ");
+        console.log(bin2base64(data));
+        var result = this.doFinal(data);
+        console.log("输出数据: ");
+        console.log(bin2base64(result));
+        return result;
+    };
+
+    Java.use('javax.crypto.Cipher').init.overload('int', 'java.security.Key').implementation = function (opmode, key) {
+        var keyWords = key.getEncoded();
+        console.log("密钥: " + bin2base64(keyWords));
+        return this.init(opmode, key);
+    }
+
+    Java.use('javax.crypto.Cipher').init.overload('int', 'java.security.Key', 'java.security.spec.AlgorithmParameterSpec').implementation = function (opmode, key, params) {
+        var keyWords = key.getEncoded();
+        console.log("密钥: " + bin2base64(keyWords));
+        var iv = Java.cast(params, Java.use('javax.crypto.spec.IvParameterSpec')).getIV();
+        console.log("IV: " + bin2base64(iv));
+        return this.init(opmode, key, params);
+    }
+});
+```
+
+```javascript
+Java.perform(function () {
+    console.log("*** Start hooking ***");
+
+    function showStacks() {
+        console.log(
+            "调用堆栈：" +
+            Java.use("android.util.Log")
+                .getStackTraceString(
+                    Java.use("java.lang.Throwable").$new()
+                )
+        );
+    }
+
+    var ByteString = Java.use("com.android.okhttp.okio.ByteString");
+
+    function toBase64(tag, data) {
+        console.log(tag + " Base64: ", ByteString.of(data).base64());
+    }
+
+    function toHex(tag, data) {
+        console.log(tag + " Hex: ", ByteString.of(data).hex());
+    }
+
+    function toUTF8(tag, data) {
+        console.log(tag + " UTF8: ", ByteString.of(data).utf8());
+    }
+
+    var cipher = Java.use("javax.crypto.Cipher");
+
+    cipher.init.overload('int', 'java.security.Key').implementation = function () {
+        console.log("---- ---- 方法调用 ---- ----");
+        console.log("Cipher.init('int', 'java.security.Key')");
+        var algorithm = this.getAlgorithm();
+        var tag = algorithm + " 密钥";
+        var className = JSON.stringify(arguments[1]);
+        if (className.indexOf("OpenSSLRSAPrivateKey") === -1) {
+            var keyBytes = arguments[1].getEncoded();
+            toUTF8(tag, keyBytes);
+            // toHex(tag, keyBytes);
+            toBase64(tag, keyBytes);
+        }
+        showStacks();
+        console.log("---- ---- ---- ---- ----\n");
+        return this.init.apply(this, arguments);
+    }
+    cipher.init.overload('int', 'java.security.Key', 'java.security.spec.AlgorithmParameterSpec').implementation = function () {
+        console.log("---- ---- 方法调用 ---- ----");
+        console.log("Cipher.init('int', 'java.security.Key', 'java.security.spec.AlgorithmParameterSpec')");
+        var algorithm = this.getAlgorithm();
+        var keyTag = algorithm + " 密钥";
+        var keyBytes = arguments[1].getEncoded();
+        toUTF8(keyTag, keyBytes);
+        // toHex(keyTag, keyBytes);
+        // toBase64(keyTag, keyBytes);
+        var ivTag = algorithm + " 初始向量";
+        var iv = Java.cast(arguments[2], Java.use("javax.crypto.spec.IvParameterSpec"));
+        var ivBytes = iv.getIV();
+        toUTF8(ivTag, ivBytes);
+        // toHex(ivTag, ivBytes);
+        // toBase64(ivTag, ivBytes);
+        showStacks();
+        console.log("---- ---- ---- ---- ----\n");
+        return this.init.apply(this, arguments);
+    }
+
+    cipher.doFinal.overload('[B').implementation = function () {
+        console.log("---- ---- 方法调用 ---- ----");
+        console.log("Cipher.doFinal('[B')");
+        var algorithm = this.getAlgorithm();
+        var inputTag = algorithm + " 输入";
+        var data = arguments[0];
+        toUTF8(inputTag, data);
+        // toHex(inputTag, data);
+        toBase64(inputTag, data);
+        var result = this.doFinal.apply(this, arguments);
+        console.log();
+        var outputTag = algorithm + " 输出";
+        toUTF8(outputTag, result);
+        // toHex(outputTag, result);
+        toBase64(outputTag, result);
+        showStacks();
+        console.log("---- ---- ---- ---- ----\n");
+        return result;
+    }
+    cipher.doFinal.overload('[B', 'int', 'int').implementation = function () {
+        console.log("---- ---- 方法调用 ---- ----");
+        console.log("Cipher.doFinal('[B', 'int', 'int')");
+        var algorithm = this.getAlgorithm();
+        var inputTag = algorithm + " 输入";
+        var data = arguments[0];
+        toUTF8(inputTag, data);
+        // toHex(inputTag, data);
+        toBase64(inputTag, data);
+        var result = this.doFinal.apply(this, arguments);
+        console.log();
+        var outputTag = algorithm + " 输出";
+        toUTF8(outputTag, result);
+        // toHex(outputTag, result);
+        toBase64(outputTag, result);
+        console.log("arguments[1]:", arguments[1],);
+        console.log("arguments[2]:", arguments[2]);
+        showStacks();
+        console.log("---- ---- ---- ---- ----\n");
+        return result;
+    }
+});
 ```

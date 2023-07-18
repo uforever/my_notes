@@ -372,18 +372,19 @@ sys.stdin.read()
 ```javascript
 Java.perform(() => {
     // 开始定义Hook
-    console.log("1. Start Hooking");
+    console.log("\n1. Start Hooking");
     var application = Java.use("android.app.Application");
     application.attach.overload("android.content.Context").implementation = function(context) {
         console.log("2. Hooking attach");
         // 执行原来的方法
         this.attach(context);
-        var classloader = context.getClassLoader();
-        Java.classFactory.loader = classloader;
-        var targetClass = Java.classFactory.use("com.example.application.MyClass");
+        var classLoader = context.getClassLoader();
+        var classFactory = Java.ClassFactory.get(classLoader);
+        var targetClass = classFactory.use("com.example.application.TargetClass");
 
-        targetClass.a.overload().implementation = function() {
-            console.log("3. Hooking a");
+        targetClass.target.overload().implementation = function() {
+            console.log("3. Hooking target function");
+            this.$super.SomeSuperFunc();
         }
     }
 });
@@ -437,7 +438,7 @@ function bin2base64(array) {
 }
 
 Java.perform(function () {
-    console.log("---- Start hooking ----");
+    console.log("\n---- Start hooking ----");
 
     Java.use('javax.crypto.spec.SecretKeySpec').$init.overload('[B', 'java.lang.String').implementation = function (key, spec) {
         console.log("密钥: " + bin2base64(key));
@@ -477,7 +478,7 @@ Java.perform(function () {
 
 ```javascript
 Java.perform(function () {
-    console.log("*** Start hooking ***");
+    console.log("\n*** Start hooking ***");
 
     function showStacks() {
         console.log(

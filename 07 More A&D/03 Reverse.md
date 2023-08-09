@@ -82,6 +82,8 @@ node webpack_mixer.js -l loader.js -m module0.js -m module1.js -o output/result.
 
 注入的方式有很多，可以通过抓包工具、浏览器插件、代码片等，最简单的方式就是现在第一行下断点，然后在控制台手动执行代码，但这样不能够持久化，最好根据实际情况酌情选择hook方式。
 
+Hook Cookie
+
 ```javascript
 (function () {
     'use strict';
@@ -98,6 +100,32 @@ node webpack_mixer.js -l loader.js -m module0.js -m module1.js -o output/result.
         }
     });
 })();
+```
+
+过无限debugger
+
+```JavaScript
+Function.prototype.temp_constructor = Function.prototype.constructor;
+Function.prototype.constructor = function () {
+    var args = arguments;
+    for (var i = 0; i < arguments.length; i++) {
+        if (arguments[i].indexOf("debugger") != -1) {
+            debugger;
+            // args[i] = arguments[i].replaceAll("debugger", "        ");
+        }
+    }
+    return Function.prototype.temp_constructor.apply(this, args);
+};
+
+temp_eval = eval;
+eval = function (arg) {
+    if (arg.indexOf("debugger") != -1) {
+        debugger;
+        // arg = arg.replaceAll("debugger", "        ");
+        // return function(){return false};
+    }
+    return temp_eval(arg);
+};
 ```
 
 7. 内存漫游

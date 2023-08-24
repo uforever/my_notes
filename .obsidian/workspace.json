@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "abfee7827e3976a2",
+        "id": "3f98293d064e30bf",
         "type": "tabs",
         "children": [
           {
-            "id": "557b8192228b1a2e",
+            "id": "8c49af4573a177af",
             "type": "leaf",
             "state": {
               "type": "empty",
@@ -148,11 +148,14 @@
   },
   "active": "0784870a8a96b129",
   "lastOpenFiles": [
-    "05 Penetration Test/04 Web应用攻击.md",
     "07 More A&D/03 Reverse.md",
-    "03 Awesome Command Line/11 安全工具.md",
     "07 More A&D/04 Crypto.md",
     "07 More A&D/05 Mobile.md",
+    "08 Rust/02 基础语法.md",
+    "08 Rust/03 所有权.md",
+    "05 Penetration Test/07 定位公共漏洞.md",
+    "05 Penetration Test/04 Web应用攻击.md",
+    "03 Awesome Command Line/11 安全工具.md",
     "04 Excellent Graphical Tools/01 跨平台工具.md",
     "07 More A&D/02 Pwn.md",
     "07 More A&D/01 Misc.md",
@@ -172,9 +175,6 @@
     "08 Rust/07 常见集合.md",
     "08 Rust/08 错误处理.md",
     "08 Rust/99 练习.md",
-    "08 Rust/06 包和模块.md",
-    "08 Rust/03 所有权.md",
-    "08 Rust/04 结构体.md",
     "Pasted image 20230519150816.png",
     "Pasted image 20230519150813.png",
     "08 Rust",

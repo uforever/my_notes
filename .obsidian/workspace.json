@@ -4,15 +4,19 @@
     "type": "split",
     "children": [
       {
-        "id": "3f98293d064e30bf",
+        "id": "dbe1d781354a3a4e",
         "type": "tabs",
         "children": [
           {
-            "id": "8c49af4573a177af",
+            "id": "3256c3c8424d9d35",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {}
+              "type": "markdown",
+              "state": {
+                "file": "07 More A&D/03 Reverse.md",
+                "mode": "source",
+                "source": false
+              }
             }
           }
         ]
@@ -89,6 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "07 More A&D/03 Reverse.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -105,6 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "07 More A&D/03 Reverse.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -126,7 +132,19 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {}
+              "state": {
+                "file": "07 More A&D/03 Reverse.md"
+              }
+            }
+          },
+          {
+            "id": "0491ac81da3a241c",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency"
+              }
             }
           }
         ],
@@ -146,35 +164,35 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "0784870a8a96b129",
+  "active": "3256c3c8424d9d35",
   "lastOpenFiles": [
-    "07 More A&D/03 Reverse.md",
-    "07 More A&D/04 Crypto.md",
     "07 More A&D/05 Mobile.md",
+    "04 Excellent Graphical Tools/02 Web工具.md",
+    "05 Penetration Test/01 被动信息收集.md",
+    "07 More A&D/04 Crypto.md",
+    "05 Penetration Test/04 Web应用攻击.md",
+    "未命名.canvas",
+    "08 Rust/07 常见集合.md",
+    "08 Rust/06 包和模块.md",
+    "06 practices/03 Chronos.md",
+    "03 Awesome Command Line/00 技巧帮助.md",
+    "07 More A&D/03 Reverse.md",
+    "05 Penetration Test/10 杀毒规避.md",
+    "03 Awesome Command Line/11 安全工具.md",
+    "06 practices/07 Hacker_Kid.md",
+    "06 practices/10 hacksudo.md",
+    "06 practices/19 Geminiv1.md",
+    "06 practices/18 narak.md",
+    "06 practices/08 y0usef.md",
+    "06 practices/06 EvilBox1.md",
+    "06 practices/04 AdmX_new.md",
+    "06 practices/02 easy_cloudantivirus.md",
+    "06 practices/01 Medium_socialnetwork.md",
     "08 Rust/02 基础语法.md",
     "08 Rust/03 所有权.md",
     "05 Penetration Test/07 定位公共漏洞.md",
-    "05 Penetration Test/04 Web应用攻击.md",
-    "03 Awesome Command Line/11 安全工具.md",
     "04 Excellent Graphical Tools/01 跨平台工具.md",
     "07 More A&D/02 Pwn.md",
-    "07 More A&D/01 Misc.md",
-    "06 practices/28 Funbox2.md",
-    "06 practices/25 DarkHole2.md",
-    "06 practices/09 Vikings.md",
-    "未命名.canvas",
-    "06 practices/16 Momentum.md",
-    "05 Penetration Test/11 权限提升.md",
-    "06 practices/06 EvilBox1.md",
-    "06 practices/10 hacksudo.md",
-    "06 practices/24 Presidential.md",
-    "04 Excellent Graphical Tools/02 Web工具.md",
-    "05 Penetration Test/01 被动信息收集.md",
-    "06 practices/12 Fawkes.md",
-    "06 practices/22 Tomato.md",
-    "08 Rust/07 常见集合.md",
-    "08 Rust/08 错误处理.md",
-    "08 Rust/99 练习.md",
     "Pasted image 20230519150816.png",
     "Pasted image 20230519150813.png",
     "08 Rust",

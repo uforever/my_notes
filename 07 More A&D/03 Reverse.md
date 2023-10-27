@@ -53,7 +53,7 @@ PE文件、ELF文件、链接库都按照可执行文件格式存储
 动态链接库包括：`.dll` 和 `.so`
 静态链接库包括：`.lib` 和 `.a`
 
-### JS
+### JS逆向
 
 #### 去混淆
 
@@ -87,17 +87,51 @@ Hook Cookie
 ```javascript
 (function () {
     'use strict';
-    var cookieTemp = "";
+    let $cookie = document.cookie;
     Object.defineProperty(document, 'cookie', {
-        set: function (val) {
-            console.log('Hook cookie ->', val);
-            debugger;
-            cookieTemp = val;
-            return val;
-        },
         get: function () {
-            return cookieTemp;
-        }
+            console.log(`[GET COOIKE]: \`${$cookie}\``);
+            return $cookie;
+        },
+        set: function (val) {
+            console.log(`[SET COOIKE]: \`${val}\``);
+            debugger; const cookie = val.split(';')[0];
+            const pair = cookie.split('=');
+            let key = ""
+                , value = "";
+            if (pair.length === 1) {
+                value = pair[0].trim();
+            } else {
+                key = pair[0].trim();
+                value = pair[1].trim();
+            }
+            let flag = false;
+            if ($cookie === '') {
+                $cookie = cookie;
+                return $cookie;
+            } else {
+                let cache = $cookie.split('; ');
+                cache = cache.map((item) => {
+                    const itemPair = item.split('=');
+                    let itemKey = "";
+                    if (itemPair.length !== 1) {
+                        itemKey = itemPair[0];
+                    }
+                    if (itemKey === key) {
+                        flag = true;
+                        return cookie;
+                    } else {
+                        return item;
+                    }
+                }
+                );
+                if (!flag) {
+                    cache.push(cookie);
+                }
+                $cookie = cache.join('; ');
+                return $cookie;
+            }
+        },
     });
 })();
 ```
@@ -488,21 +522,65 @@ atob("YWRtaW4=");
 ##### 简易Cookie hook
 
 ```JS
-cookieTemp = document.cookie;
+// ==UserScript==
+// @name         Cookie Hook
+// @namespace    http://test.demo/
+// @version      1.0
+// @description  Hook document.cookie
+// @author       v9ng
+// @match        *://*/*
+// @grant        none
+// ==/UserScript==
 
-// 覆盖
-Object.defineProperty(document, "cookie", {
-    get() {
-        console.log("---- Getting Cookie ----");
-        console.log("Cookie:", cookieTemp);
-        console.log("---- ---- ----");
-        return cookieTemp;
-    },
-    set(value) {
-        console.log(`Setting Cookie... Value: \`${value}\``);
-        cookieTemp = value;
-    },
-});
+(function () {
+    'use strict';
+    let $cookie = document.cookie;
+    Object.defineProperty(document, 'cookie', {
+        get: function () {
+            console.log(`[GET COOIKE]: \`${$cookie}\``);
+            return $cookie;
+        },
+        set: function (val) {
+            console.log(`[SET COOIKE]: \`${val}\``);
+            debugger; const cookie = val.split(';')[0];
+            const pair = cookie.split('=');
+            let key = ""
+                , value = "";
+            if (pair.length === 1) {
+                value = pair[0].trim();
+            } else {
+                key = pair[0].trim();
+                value = pair[1].trim();
+            }
+            let flag = false;
+            if ($cookie === '') {
+                $cookie = cookie;
+                return $cookie;
+            } else {
+                let cache = $cookie.split('; ');
+                cache = cache.map((item) => {
+                    const itemPair = item.split('=');
+                    let itemKey = "";
+                    if (itemPair.length !== 1) {
+                        itemKey = itemPair[0];
+                    }
+                    if (itemKey === key) {
+                        flag = true;
+                        return cookie;
+                    } else {
+                        return item;
+                    }
+                }
+                );
+                if (!flag) {
+                    cache.push(cookie);
+                }
+                $cookie = cache.join('; ');
+                return $cookie;
+            }
+        },
+    });
+})();
 ```
 
 ##### hook检测与保护

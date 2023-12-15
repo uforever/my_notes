@@ -53,6 +53,9 @@ PE文件、ELF文件、链接库都按照可执行文件格式存储
 动态链接库包括：`.dll` 和 `.so`
 静态链接库包括：`.lib` 和 `.a`
 
+### Frida注入
+
+
 ### JS逆向
 
 #### 去混淆
@@ -190,6 +193,224 @@ setNativeCode(eval, "eval");
 
 [ast-hook-for-js-RE](https://github.com/JSREI/ast-hook-for-js-RE)
 [Trace](https://github.com/L018/Trace)
+
+#### AST
+
+##### 混淆示例
+
+```js
+const fs = require('fs');
+const parser = require('@babel/parser');
+const traverse = require('@babel/traverse').default;
+const generator = require('@babel/generator').default;
+const t = require('@babel/types');
+
+const jscode = fs.readFileSync('./input.js', {
+    encoding: 'utf-8'
+});
+
+const ast = parser.parse(jscode);
+
+const usedHex = new Set();
+const generateRandomHex = function () {
+    let num;
+    do {
+        num = Math.floor(Math.random() * 0xffff);
+        hex = num.toString(16).padStart(4, '0');
+    } while (usedHex.has(hex));
+    usedHex.add(hex);
+    return hex;
+};
+let bigArr = [];
+const bigArrName = '$_' + generateRandomHex();
+const toHex = function (str) {
+    const buffer = Buffer.from(str, 'utf8');
+    let hexStr = '';
+    for (let i = 0; i < buffer.length; i++) {
+        // hexStr += '\\x' + ('00' + buffer[i].toString(16)).slice(-2);
+        hexStr += '\xB1\xD7\xF7' + ('00' + buffer[i].toString(16)).slice(-2);
+    }
+    return hexStr;
+};
+
+const visitor = {
+    MemberExpression(path) {
+        if (t.isIdentifier(path.node.property)) {
+            const name = path.node.property.name;
+            path.node.property = t.stringLiteral(name);
+        }
+        path.node.computed = true;
+    },
+    Identifier(path) {
+        const name = path.node.name;
+        const globalIdentifiers = [
+            "Object", "Function", "Array", "Number",
+            "parseFloat", "parseInt", "Infinity", "NaN",
+            "undefined", "Boolean", "String", "Symbol",
+            "Date", "Promise", "RegExp", "Error",
+            "AggregateError", "EvalError", "RangeError", "ReferenceError",
+            "SyntaxError", "TypeError", "URIError", "JSON",
+            "Math", "Intl", "ArrayBuffer", "Atomics",
+            "Uint8Array", "Int8Array", "Uint16Array", "Int16Array",
+            "Uint32Array", "Int32Array", "Float32Array", "Float64Array",
+            "Uint8ClampedArray", "BigUint64Array", "BigInt64Array", "DataView",
+            "Map", "BigInt", "Set", "WeakMap",
+            "WeakSet", "Proxy", "Reflect", "FinalizationRegistry",
+            "WeakRef", "decodeURI", "decodeURIComponent", "encodeURI",
+            "encodeURIComponent", "escape", "unescape", "eval",
+            "isFinite", "isNaN", "console", "Option",
+            "Image", "Audio"
+        ];
+        if (globalIdentifiers.indexOf(name) != -1) {
+            path.replaceWith(t.memberExpression(t.identifier('window'), t.stringLiteral(name), true));
+        }
+    },
+    NumericLiteral(path) {
+        const value = path.node.value;
+        const key = parseInt(Math.random() * 899999 + 100000, 10);
+        const cipherNum = value ^ key;
+        path.replaceWith(t.binaryExpression('^', t.numericLiteral(cipherNum), t.numericLiteral(key)));
+        path.skip();
+    },
+    StringLiteral(path) {
+        const cipherText = btoa(path.node.value);
+        const bigArrIndex = bigArr.indexOf(cipherText);
+        let index = bigArrIndex;
+        if (bigArrIndex == -1) {
+            const length = bigArr.push(cipherText);
+            index = length - 1;
+        }
+        const encStr = t.callExpression(
+            t.identifier('atob'),
+            [t.memberExpression(t.identifier(bigArrName), t.numericLiteral(index), true)]
+        );
+        path.replaceWith(encStr);
+        path.skip();
+    },
+    BinaryExpression(path) {
+        const operator = path.node.operator;
+        const left = path.node.left;
+        const right = path.node.right;
+        const a = t.identifier('a');
+        const b = t.identifier('b');
+        const funcNameIdentifier = path.scope.generateUidIdentifier('xxx');
+        const func = t.functionDeclaration(
+            funcNameIdentifier,
+            [a, b],
+            t.blockStatement([
+                t.returnStatement(t.binaryExpression(operator, a, b)),
+            ])
+        );
+        const blockStatement = path.findParent(p => p.isBlockStatement());
+        blockStatement.node.body.unshift(func);
+        path.replaceWith(t.callExpression(funcNameIdentifier, [left, right]));
+    },
+};
+traverse(ast, visitor);
+
+const offset = Math.floor(Math.random() * bigArr.length);
+
+(function (arr, num) {
+    const disrupt = function (number) {
+        while (--number) {
+            arr.unshift(arr.pop());
+        }
+    };
+    disrupt(++num);
+})(bigArr, offset);
+
+const restoreCode = `(function(arr, num) {
+    const disrupt = function(number) {
+        while (--number) {
+            arr.push(arr.shift());
+        }
+    };
+    disrupt(++num);
+})(${bigArrName}, ${offset});`;
+const astRestore = parser.parse(restoreCode);
+const visitorRestore = {
+    MemberExpression(path) {
+        if (t.isIdentifier(path.node.property)) {
+            const name = path.node.property.name;
+            path.node.property = t.stringLiteral(toHex(name));
+        }
+        path.node.computed = true;
+    },
+};
+traverse(astRestore, visitorRestore);
+ast.program.body.unshift(astRestore.program.body[0]);
+
+const renameOwnBinding = function (path) {
+    let ownBinding = {};
+    let globalBinding = {};
+    path.traverse({
+        Identifier(p) {
+            const name = p.node.name;
+            const binding = p.scope.getOwnBinding(name);
+            binding && generator(binding.scope.block).code == path + '' ?
+                (ownBinding[name] = binding) : (globalBinding[name] = 1)
+        }
+    });
+    for (let originName in ownBinding) {
+        let newName;
+        do {
+            newName = '_$' + generateRandomHex();
+        } while (globalBinding[newName]);
+        ownBinding[originName].scope.rename(originName, newName);
+    }
+};
+// traverse(ast, {
+//     FunctionExpression(path) {
+//         const blockStatement = path.node.body;
+//         const Statements = blockStatement.body.map(function (v) {
+//             if (t.isReturnStatement(v)) return v;
+//             const code = generator(v).code;
+//             const cipherText = btoa(code);
+//             const decryptFunc = t.callExpression(t.identifier('atob'), [t.stringLiteral(cipherText)]);
+//             return t.expressionStatement(t.callExpression(t.identifier('eval'), [decryptFunc]));
+//         });
+//         path.get('body').replaceWith(t.blockStatement(Statements));
+//     },
+// });
+// traverse(ast, {
+//     FunctionExpression(path) {
+//         const blockStatement = path.node.body;
+//         const Statements = blockStatement.body.map(function (v) {
+//             if (t.isReturnStatement(v)) return v;
+//             // if (!(v.trailingComments && v.trailingComments[0].value == 'ASCIIEncrypt')) return v;
+//             // delete v.trailingComments;
+//             const code = generator(v).code;
+//             const asciiCode = [].map.call(code, function (v) {
+//                 return t.numericLiteral(v.charCodeAt(0));
+//             });
+//             const decryptFuncName = t.memberExpression(t.identifier('String'), t.identifier('fromCharCode'));
+//             const decryptFunc = t.callExpression(decryptFuncName, asciiCode);
+//             return t.expressionStatement(t.callExpression(t.identifier('eval'), [decryptFunc]));
+//         });
+//         path.get('body').replaceWith(t.blockStatement(Statements));
+//     },
+// });
+traverse(ast, {
+    'Program|FunctionDeclaration|FunctionExpression'(path) {
+        renameOwnBinding(path);
+    },
+});
+
+bigArr = bigArr.map(function (v) {
+    return t.stringLiteral(v);
+});
+bigArr = t.variableDeclarator(t.identifier(bigArrName), t.arrayExpression(bigArr));
+bigArr = t.variableDeclaration('var', [bigArr]);
+ast.program.body.unshift(bigArr);
+
+let code = generator(ast).code;
+// const hexRegex = /\\\\x([0-9A-Fa-f]{2})/g;
+// code = code.replace(hexRegex, (_match, pattern) => {
+//     return "\\x" + pattern.toUpperCase();
+// });
+code = code.replace(/\\xB1\\xD7\\xF7/g, '\\x');
+fs.writeFileSync('./output.js', code);
+```
 
 #### 补环境框架
 
@@ -1716,3 +1937,4 @@ console.log('*** end ***');
 
 1. 补缺少的环境
 2. 实现环境方法：mdn查参数、返回值、作用。好实现的实现：只对当前对象产生影响直接给this赋值或者取值即可，对全局有影响的最复杂需要观察使用情况按需补；不好实现的：没有返回值的方法有些有时不用补，有返回值且较为固定或易于模拟的有些有时不用完全实现，只给出输出即可。
+3. 

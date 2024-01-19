@@ -1,4 +1,5 @@
-### 编译过程
+### 反汇编
+#### 编译过程
 
 一个经典C程序：`hello.c`
 
@@ -53,8 +54,31 @@ PE文件、ELF文件、链接库都按照可执行文件格式存储
 动态链接库包括：`.dll` 和 `.so`
 静态链接库包括：`.lib` 和 `.a`
 
-### Frida注入
 
+
+#### 基础知识
+
+- 一个字节8bit，可以用2位十六进制表示。一个十六进制数也被称为半字节。
+- 两个字节称为一个字，两个字称为双字(dword，4字节，32位，8位十六进制表示）
+
+#### 常见指令
+
+##### 浮点数指令
+
+| 指令 | 用法 | 含义 | 功能 |
+| ---- | ---- | ---- | ---- |
+| FLD | `FLD <in>` | Floating-Point Load | 浮点数值从指定的内存位置复制到浮点寄存器堆栈的顶部 |
+| FILD | `FILD <in>` | Floating-Point Integer Load | 将带符号整数转换为浮点数并加载到浮点寄存器中 |
+| FLDZ | `FLDZ` | Floating-Point Load Zero | 将浮点常量0.0从内存中加载到浮点寄存器堆栈的顶部，这个指令可以用来初始化浮点变量或者清空浮点数值 |
+| FLD1 | `FLD1` | Floating-Point Load One | 将浮点常量1.0从内存中加载到浮点寄存器堆栈的顶部 |
+| FST | `FST <out>` | Floating-Point Store | 将浮点寄存器堆栈的顶部的数值存储到内存地址中 |
+| FSTP | `FSTP <out>` | Floating-Point Store with Pop | 将浮点寄存器堆栈的顶部的数值弹出到指定的内存位置 |
+| FIST | `FIST <out>` | Floating-Point Integer Store | 将浮点寄存器堆栈的顶部的数值转换为带符号整数，然后存储到指定的内存位置 |
+| FISTP | `FISTP <out>` | Floating-Point Integer Store with Pop | 将浮点寄存器堆栈的顶部的数值弹出后转换为带符号整数，然后存储到指定的内存位置 |
+| FCOM | `FCOM [in]` | Floating-Point Compare | 将IN地址数据与栈顶ST(0)进行实数比较，影响对应标记位（CF和ZF），如果不传IN，则默认比较浮点寄存器堆栈的顶部两个数值 |
+| FTST | `FTST` | Floating-Point Test for Zero | 比较栈顶ST(0)是否为0.0，影响对应标记位（ZF） |
+| FADD | `FADD [in]` | Floating-Point ADDition | 将IN地址内的数据与ST(0)做加法运算，结果放入ST(0)中，即替换ST(0) |
+| FADDP | `FADDP [n] [st]` | Floating-Point ADDition with Pop | 将ST(N)中的数据与ST(0)中的数据做加法运算，N为0~7中的任意一个数，先执行一次出栈操作，然后将相加结果放入ST(0)中保存 |
 
 ### JS逆向
 
@@ -1937,4 +1961,6 @@ console.log('*** end ***');
 
 1. 补缺少的环境
 2. 实现环境方法：mdn查参数、返回值、作用。好实现的实现：只对当前对象产生影响直接给this赋值或者取值即可，对全局有影响的最复杂需要观察使用情况按需补；不好实现的：没有返回值的方法有些有时不用补，有返回值且较为固定或易于模拟的有些有时不用完全实现，只给出输出即可。
-3. 
+
+
+

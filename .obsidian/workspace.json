@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "f6c4671eb08509d7",
+        "id": "6ba53c2c8f1d8634",
         "type": "tabs",
         "children": [
           {
-            "id": "c24ec3f144bc9bf8",
+            "id": "f203190d7814fe2e",
             "type": "leaf",
             "state": {
               "type": "empty",
@@ -89,6 +89,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "07 More A&D/03 Reverse.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -105,6 +106,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "07 More A&D/03 Reverse.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -126,7 +128,9 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {}
+              "state": {
+                "file": "07 More A&D/03 Reverse.md"
+              }
             }
           },
           {
@@ -160,7 +164,14 @@
   },
   "active": "0784870a8a96b129",
   "lastOpenFiles": [
+    "07 More A&D/02 Pwn.md",
+    "07 More A&D/03 Reverse.md",
+    "02 Neovim/88 helix.md",
     "08 Rust/88 实践.md",
+    "08 Rust/02 基础语法.md",
+    "05 Penetration Test/04 Web应用攻击.md",
+    "08 Rust/99 练习.md",
+    "04 Excellent Graphical Tools/01 跨平台工具.md",
     "08 Rust/03 所有权.md",
     "Pasted image 20231228104747.png",
     "未命名.canvas",
@@ -170,15 +181,10 @@
     "06 practices/09 Vikings.md",
     "06 practices/06 EvilBox1.md",
     "06 practices/01 Medium_socialnetwork.md",
-    "08 Rust/99 练习.md",
     "07 More A&D/01 Misc.md",
-    "07 More A&D/03 Reverse.md",
     "07 More A&D/05 Mobile.md",
     "07 More A&D/04 Crypto.md",
-    "05 Penetration Test/04 Web应用攻击.md",
-    "04 Excellent Graphical Tools/01 跨平台工具.md",
     "06 practices/03 Chronos.md",
-    "08 Rust/02 基础语法.md",
     "08 Rust/01 入门.md",
     "06 practices/10 hacksudo.md",
     "08 Rust/05 枚举.md",
@@ -186,8 +192,6 @@
     "08 Rust/07 常见集合.md",
     "04 Excellent Graphical Tools/02 Web工具.md",
     "05 Penetration Test/01 被动信息收集.md",
-    "08 Rust/06 包和模块.md",
-    "03 Awesome Command Line/00 技巧帮助.md",
     "Pasted image 20230519150816.png",
     "Pasted image 20230519150813.png",
     "08 Rust",

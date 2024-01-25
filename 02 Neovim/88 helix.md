@@ -5,7 +5,16 @@
 
 > 标记为 TS 的映射需要该文件类型的 tree-sitter 语法支持。
 
-> Windows Terminal想要正确显示文本，可以启用 AtlasEngine。
+> Windows Terminal想要正确显示文本，可以启用 AtlasEngine。PowerShell配置
+
+```powershell
+# 安装 PowerShell 7
+code $PROFILE
+# 添加一行
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+# 再加一行
+Set-PSReadLineKeyHandler -Chord "Ctrl+f" -Function AcceptSuggestion
+```
 
 ## Normal mode
 
@@ -1240,6 +1249,7 @@ supersede-menu = true
 [keys.normal.'\']
 c = ["select_mode", "goto_line_end", "change_selection"]
 d = ["select_mode", "goto_line_end", "delete_selection"]
+y = ["select_mode", "goto_line_end", "yank"]
 f = [":format"]
 '\' = [":vsplit"]
 
@@ -1305,4 +1315,14 @@ command = "clippy"
 [[language]]
 name = "toml"
 formatter = { command = "taplo", args = ["fmt", "-"] }
+
+# NASM
+[[language]]
+name = "nasm"
+indent = { tab-width = 4, unit = "    " }
+
+# GAS
+[[language]]
+name = "gas"
+indent = { tab-width = 4, unit = "    " }
 ```

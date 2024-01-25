@@ -60,6 +60,106 @@ PE文件、ELF文件、链接库都按照可执行文件格式存储
 
 - 一个字节8bit，可以用2位十六进制表示。一个十六进制数也被称为半字节。
 - 两个字节称为一个字，两个字称为双字(dword，4字节，32位，8位十六进制表示）
+- 64bit称为一个四字，用qword表示
+- `xmm`寄存器是128bit宽的，16字节
+- `ymm`寄存器是256bit宽的，32字节
+
+#### 通用寄存器
+
+通用寄存器是一种计算机硬件组件，用于存储和操作CPU中的数据。它们被称为"通用"寄存器，因为它们可以用于执行各种不同的任务，例如存储内存地址、整数值、指针等。 在x86架构的CPU中，有8个通用寄存器，分别命名为AX、BX、CX、DX、SI、DI、BP、SP。其中，AX、BX、CX、DX被称为"数据寄存器"，而SI、DI、BP、SP则被称为"指针寄存器"。
+
+| 缩写 | 寄存器 | 作用 |
+| --- | --- | --- |
+| AX | **累加**器 | 存储二进制数字、ASCII码字符和字符串等 |
+| BX | **基址**寄存器 | 存储访问内存中的数据时的基地址 |
+| CX | **计数**器 | 循环和移位操作 |
+| DX | **数据**寄存器 | I/O端口操作和乘法/除法运算，有时扩展AX |
+| SI | **源索引**寄存器 | 存储源数据的偏移地址 |
+| DI | **目标索引**寄存器 | 存储目标数据的偏移地址 |
+| BP | **基址指针**寄存器 | 存储堆栈框架的基地址 |
+| SP | **堆栈指针**寄存器 | 存储堆栈顶部的地址 |
+
+EAX（32位，4字节，1个双字）：31-0
+AX（16位，2字节，1个单字）：15-0
+AH（8位，1字节）：15-8
+AL（8位，1字节）：7-0
+
+BH、CH 和 DH（高字节）和 BL、CL 和 DL同理
+
+ESI（32位，4字节，1个双字）：31-0
+SI（16位，2字节，1个单字）：15-0
+DI、BP、SP同理
+
+![[registers.png]]
+
+#### 段寄存器
+
+在x86架构CPU中，除了8个通用寄存器之外，还有4个段寄存器，分别命名为CS、DS、ES、SS。这些寄存器用于存储内存地址和数据段的相关信息，例如代码段、数据段、堆栈段等。
+
+| 缩写 | 寄存器 | 作用 |
+| ---- | ---- | ---- |
+| CS | **代码段**寄存器 | 存储执行CPU指令时的程序代码所在的段地址（.text 部分） |
+| DS | **数据**段寄存器 | 存储数据操作时的数据所在的段地址（.data 部分） |
+| ES | **附加段**（**额外段**）寄存器 | 提供一个额外的段地址，用于特殊操作或字符串处理 |
+| SS | **堆栈段**寄存器 | 存储堆栈操作时的堆栈段地址 |
+
+处理器根据 CS 寄存器值和指令指针 （EIP） 寄存器中包含的偏移值从内存中检索指令代码。任何程序都不能显式加载或更改 CS 寄存器，处理器在为程序分配内存空间时分配其值。
+DS、ES、**FS 和 GS**（额外段寄存器） 都用于指向数据段。四个独立的数据段中的每一个都有助于程序分离数据元素，以确保它们不重叠。程序使用适当的指针值加载数据段寄存器，然后使用偏移值引用各个内存位置。
+堆栈段寄存器 （SS） 用于指向堆栈段。堆栈包含传递给程序中的函数和过程的数据值。
+段寄存器被视为操作系统的一部分，在几乎所有情况下都不能直接读取或更改。
+
+#### 控制寄存器
+
+| 缩写 | 寄存器 | 作用 |
+| ---- | ---- | ---- |
+| CR0 | 控制寄存器0 | 控制保护模式内核的运行方式，例如启用或禁用内存分页、写保护等 |
+| CR2 | 控制寄存器2 | 存储最近一次访问发生缺页异常时的线性地址 |
+| CR3 | 控制寄存器3 | 存储页目录表的物理基地址，用于虚拟内存管理 |
+| CR4 | 控制寄存器4 | 控制一些特殊的系统级功能，例如调试寄存器和扩展保护模式 |
+
+除了以上四个控制寄存器，还有一些其他的控制寄存器可供使用，例如调试寄存器DR0-DR7、高速缓存控制寄存器CR8等。这些寄存器通常由操作系统内核或驱动程序使用，而不是普通的用户应用程序。
+
+控制寄存器在计算机系统中扮演着重要的角色，它们允许CPU控制某些关键性能和安全特性，并支持各种不同类型的应用程序。了解它们的功能和用途对于系统编程和优化非常有帮助。
+
+#### Flags寄存器
+
+标志有助于控制、检查和验证程序的执行，是确定处理器执行的每个操作是否成功的机制。
+
+32 位汇编中存在一个包含一组状态、控制和系统标志的 32 位寄存器。该寄存器称为 EFLAGS 寄存器，因为它包含 32 位信息，这些信息被映射以表示特定的信息标志。
+
+| 缩写 | 寄存器 | 作用 |
+| ---- | ---- | ---- |
+| CF | 进位标志（Carry Flag） | 存储最高有效位（MSB）进位或借位的状态 |
+| PF | 奇偶标志（Parity Flag） | 存储结果中1的个数是否为偶数 |
+| AF | 辅助进位标志（Auxiliary Carry Flag） | 存储低四位进位或借位的状态，用于二进制编码十进制数学运算 |
+| ZF | 零标志（Zero Flag） | 存储结果是否为0 |
+| SF | 符号标志（Sign Flag） | 存储结果的符号，1代表负数，0代表正数或零 |
+| TF | 跟踪标志（Trap Flag） | 调试器使用的单步跟踪标志 |
+| IF | 中断标志（Interrupt Flag） | 控制CPU响应外部中断的开关 |
+| DF | 方向标志（Direction Flag） | 控制字符串操作的方向，0表示从左往右，1表示从右往左 |
+| OF | 溢出标志（Overflow Flag） | 存储有符号整数运算是否溢出的状态 |
+
+在实际编程中，可以使用特殊汇编指令（例如`add eax, ebx; setc al`）来读取或写入Flags寄存器中的特定标志位，以及根据其值进行条件判断等操作。对于不同的指令集和编程语言，可能会提供不同的方式和工具来操作和管理Flags寄存器。
+
+Flags寄存器是计算机硬件中非常重要的组件之一，它们记录着CPU运算过程中的状态和结果，是控制程序流程和处理异常情况的关键所在。了解Flags寄存器的含义和用途对于系统编程和优化非常有帮助。
+
+#### 栈
+
+栈指针是一个包含堆栈顶部的寄存器。堆栈指针包含最小的地址，例如 0x00001000，小于 0x00001000 的地址被视为垃圾地址，大于 0x00001000 的地址被视为有效地址。
+
+栈在内存中是向下增长的，栈底是堆栈中最大的有效地址，栈极限是堆栈的最小有效地址。如果堆栈指针小于此值，就会出现堆栈溢出，从而破坏程序。
+
+在堆栈上有两种操作，即push和pop。通过将堆栈指针设置为一个较小的值，可以push一个或多个寄存器。通常的做法是减去要push到堆栈的寄存器数的四倍，然后将寄存器复制到堆栈。
+
+pop一个或多个寄存器的方法是将数据从堆栈复制到寄存器，然后向堆栈指针添加一个值。通常的做法是将要pop的寄存器数目的四倍加到堆栈上。
+
+#### 堆
+
+堆栈向下增长，堆向上增长。
+
+内存泄露：要在堆上分配内存，必须使用 malloc（） 或 calloc（），它们是内置的 C 函数。在堆上分配内存后，一旦不再需要内存，就要使用 free（） 取消分配内存来释放内存。如果不执行此步骤，程序将出现所谓的内存泄漏。也就是说，堆上的内存仍将被搁置，并且不会被需要它的其他进程使用。
+
+与堆栈不同，在堆上创建的变量可由程序中任何位置的任何函数访问。堆变量本质上是全局范围的。
 
 #### 常见指令
 
@@ -79,6 +179,305 @@ PE文件、ELF文件、链接库都按照可执行文件格式存储
 | FTST | `FTST` | Floating-Point Test for Zero | 比较栈顶ST(0)是否为0.0，影响对应标记位（ZF） |
 | FADD | `FADD [in]` | Floating-Point ADDition | 将IN地址内的数据与ST(0)做加法运算，结果放入ST(0)中，即替换ST(0) |
 | FADDP | `FADDP [n] [st]` | Floating-Point ADDition with Pop | 将ST(N)中的数据与ST(0)中的数据做加法运算，N为0~7中的任意一个数，先执行一次出栈操作，然后将相加结果放入ST(0)中保存 |
+
+##### CMOV指令
+
+| 指令 | 功能 | 条件码 |
+| ---- | ---- | ---- |
+| CMOVZ | 如果ZF标志位为1，则复制源操作数 | ZF（等于/零） |
+| CMOVNZ | 如果ZF标志位为0，则复制源操作数 | ZF（不等于/非零） |
+| CMOVS | 如果SF标志位为1，则复制源操作数 | SF（带符号/小于） |
+| CMOVNS | 如果SF标志位为0，则复制源操作数 | SF（无符号/大于等于） |
+| CMOVG | 如果ZF、SF均未设置，则复制源操作数 | ZF=0且SF=OF（大于） |
+| CMOVGE | 如果SF=OF，则复制源操作数 | SF=OF（大于等于） |
+| CMOVL | 如果SF≠OF，则复制源操作数 | SF≠OF（小于） |
+| CMOVLE | 如果ZF或者SF≠OF，则复制源操作数 | ZF=1或者SF≠OF（小于等于） |
+| CMOVA | 如果CF和ZF均未设置，则复制源操作数 | CF=0且ZF=0（无符号/大于） |
+| CMOVNBE | 如果CF和ZF均未设置，则复制源操作数 | CF=0且ZF=0（无符号/大于） |
+| CMOVAE | 如果CF未设置，则复制源操作数 | CF=0（无符号/大于等于） |
+| CMOVNB | 如果CF未设置，则复制源操作数 | CF=0（无符号/大于等于） |
+| CMOVBE | 如果CF或ZF被设置，则复制源操作数 | CF=1或ZF=1（无符号/小于等于） |
+| CMOVNA | 如果ZF或CF被设置，则复制源操作数 | ZF=1或CF=1（无符号/不大于） |
+
+无符号指令使用 CF、ZF 和 PF 来确定两个操作数之间的差异，其中有符号指令使用 SF 和 OF 来指示操作数之间比较的条件。
+
+
+##### 其它指令
+
+| 指令 | 功能 | 用法示例 |
+| ---- | ---- | ---- |
+| `mov` | 将数据从一个位置复制到另一个位置 | `mov eax, ebx` - 将 EBX 寄存器中的值复制到 EAX 寄存器中 |
+| `add` | 将两个数相加 | `add eax, 10` - 将 EAX 寄存器中的值加上 10 |
+| `sub` | 将两个数相减 | `sub edx, ecx` - 将 ECX 寄存器中的值从 EDX 寄存器中的值中减去 |
+| `inc` | 将一个数加一 | `inc ebx` - 将 EBX 寄存器中的值加 1 |
+| `dec` | 将一个数减一 | `dec ecx` - 将 ECX 寄存器中的值减 1 |
+| `cmp` | 比较两个数的大小 | `cmp eax, ebx` - 比较 EAX 寄存器中的值和 EBX 寄存器中的值的大小 |
+| `jmp` | 无条件跳转至指定地址 | `jmp label` - 跳转至标号为 "label" 的代码行 |
+| `je` | 当前结果等于零时跳转 | `je label` - 如果最近一次比较操作结果为 0，则跳转至标号为 "label" 的代码行 |
+| `jne` | 当前结果不等于零时跳转 | `jne label` - 如果最近一次比较操作结果不为 0，则跳转至标号为 "label" 的代码行 |
+| `lea` | 将内存地址加载到寄存器中 | `lea ebx, [my_var]` - 将名为 "my_var" 变量的地址加载到 EBX 寄存器中 |
+| `shl` | 将一个数左移若干位 | `shl eax, 3` - 将 EAX 寄存器中的值左移 3 位 |
+| `shr` | 将一个数右移若干位 | `shr ecx, 2` - 将 ECX 寄存器中的值右移 2 位 |
+| `rol` | 将一个数向左循环移位（包括进位） | `rol edx, 4` - 将 EDX 寄存器中的值循环左移 4 位 |
+| `ror` | 将一个数向右循环移位（包括进位） | `ror ebx, 5` - 将 EBX 寄存器中的值循环右移 5 位 |
+| `times` | 重复执行某个代码片段多次 | `times 5 db 0` - 定义5个字节并将其初始化为0 |
+
+|指令|含义|所定义的数据大小|
+|---|---|---|
+|`db`|定义一个或多个8位字节（即一个或多个字节）|8位（1字节）|
+|`dw`|定义一个或多个16位的字（即一个或多个双字节）|16位（2字节）|
+|`dd`|定义一个或多个32位的字（即4个字节）|32位（4字节）|
+|`dq`|定义一个或多个64位的字（即8个字节）|64位（8字节）|
+|`dt`|定义一个或多个10字节的十进制实数|80位（10字节）|
+
+
+#### 汇编程序
+一个典型的汇编程序由三个主要部分组成：数据段（data segment）、BSS段（block started by symbol segment）和代码段（text segment）。：
+
+1. 数据段（data segment）：数据段是定义程序中使用的全局变量的地方。在这个段中，程序员可以定义各种类型的数据，例如整数、字符串、数组等等。在程序执行期间，这个段的内容是只读的，它的作用主要是为了存储程序需要的静态数据，以及初始化全局变量。
+    
+2. BSS段（block started by symbol segment）：BSS段是用于存储未初始化的全局变量的地方。如果程序中有未经初始化的全局变量，在编译时，它们会被分配到BSS段中。在程序执行期间，BSS段的初始值全部为0，这个段也是只读的。
+    
+3. 代码段（text segment）：代码段是存储程序的指令的地方。在这个段中，程序员可以定义各种操作码和寻址方式，完成特定的任务。在程序执行期间，这个段的内容是只可执行的，不能被修改。代码段通常是机器语言指令（即二进制代码）的集合，一个指令对应着一条汇编语句。它以全局_start开头，告诉内核执行开始的位置。
+    
+
+除了上述三个主要部分之外，汇编程序还可能包括其他的部分，例如符号表（symbol table）、重定位表（relocation table）等等。这些部分的作用是辅助链接器将不同的二进制文件组合成单个可执行文件。
+
+汇编语句的每一行结构：【标签】【助记符】【操作数】【注释】
+
+使用`objdump -d`命令将二进制文件以汇编代码的形式展示出来
+```shell
+objdump -d -M intel <ELF file name>
+# ...
+# b8 00 00 00 00          mov    eax,0x0
+# ...
+
+# 不加 -M intel 将会输出 AT&T 语法
+# ...
+# b8 00 00 00 00          mov    $0x0,%eax
+# ...
+```
+如 `b8 00 00 00 00` 表示指令 `mov eax,0x0`
+则 `mov eax,0x1` 的二进制应为 `b8 01 00 00 00`
+`01 00 00 00` 表示一个双字的立即数
+
+**编译可调试程序**
+```shell
+gcc -m32 -ggdb -o {test} {test.c}
+```
+**转换为 AT&T 语法汇编**
+```shell
+gcc -S -m32 -O0 {exit.c}
+```
+-O0 将告诉编译器在编译二进制文件时要使用多少优化，数字 0 表示没有优化，这意味着它是人类最可读的指令集。如果要代入 1、2 或 3，则优化量会随着值的增加而增加。
+**编译成二进制对象文件**
+```shell
+gcc -m32 -c {exit.s} -o {exit.o}
+```
+**使用链接器从二进制对象文件创建实际的二进制可执行文件**
+```shell
+gcc -m32 {exit.o} -o {exit}
+```
+
+**AT&T 汇编代码程序**
+```
+.section .data
+
+.section .bss
+    .lcomm buffer 1
+
+.section .text
+    .global _start
+
+_start:
+    nop
+
+mov_immediate_data_to_register:
+    movl $100, %eax
+    movl $0x50, buffer
+
+exit:
+    movl $1, %eax
+    movl $0, %ebx
+    int $0x80
+```
+编译
+```shell
+as --32 -gstabs -o {moving_immediate_data.o} {moving_immediate_data.s}
+ld -m elf_i386 -o {moving_immediate_data} {moving_immediate_data.o}
+```
+
+**intel 汇编代码程序**
+```nasm
+section .data
+
+section .bss
+    buffer resb 1
+
+section .text
+    global _start
+
+_start:
+    nop
+
+mov_immediate_data_to_register:
+    mov eax, 100
+    mov byte[buffer], 0x50
+
+exit:
+    mov eax, 1
+    mov ebx, 0
+    int 0x80
+```
+编译
+```shell
+nasm -f elf32 {moving_immediate_data.asm}
+ld -m elf_i386 -o {moving_immediate_data} {moving_immediate_data.o}
+
+# 64位
+nasm -f elf64 [-o test.o] test.asm
+```
+
+**gdb使用**
+```shell
+# 启动
+gdb -q {./moving_immediate_data}
+# 设置断点
+# break, brea, bre, br, b -- Set breakpoint at specified location.
+(gdb) > b _start
+(gdb) > b *0x0804900c
+# 运行程序
+# run, r -- Start debugged program.
+(gdb) > r
+# 反编译
+# disassemble -- Disassemble a specified section of memory.
+(gdb) > disassemble
+# 设置语法
+# set disassembly-flavor -- Set the disassembly flavor.
+(gdb) > set disassembly-flavor intel
+(gdb) > set disassembly-flavor att
+# 单步步入
+# stepi, si -- Step one instruction exactly.
+(gdb) > si
+# 寄存器信息
+# info registers, info r -- List of integer registers and their contents, for selected stack frame.
+(gdb) > info r
+# 变量信息
+# info variables -- All global and static variable names or those matching REGEXPs.
+(gdb) > info variables
+# 函数信息
+# info functions -- All function names or those matching REGEXPs.
+(gdb) > info functions
+# 打印
+# print, inspect, p -- Print value of expression EXP.
+# /d - 以10进制格式打印整数
+# /x - 以16进制格式打印整数
+# /o - 以8进制格式打印整数
+# /t - 以2进制格式打印整数
+# /f - 以浮点数格式打印实数
+# /a - 以地址格式打印指针
+(gdb) > print $ebx
+(gdb) > print /t $rax
+(gdb) > print (int) constant
+(gdb) > print (int [11]) constants
+(gdb) > print *0x804a000
+# 查找变量、函数或标签的地址
+# info address -- Describe where symbol SYM is stored.
+(gdb) > info address constant
+# 检查内存内容
+# x -- Examine memory: x/FMT ADDRESS.
+# /xb表示以十六进制字节的形式显示内存内容
+# /11d表示打印11个十进制数
+# /c表示以字符形式打印
+(gdb) > x/xb 0x804a000
+(gdb) > x/11d &constants
+(gdb) > x /1c &answer
+# 设置值
+# set -- Evaluate expression EXP and assign result to variable VAR.
+(gdb) > set $eax = 0x66
+(gdb) > set $eip = 0x0804901e
+(gdb) > set {int}0x804a000 = 333
+(gdb) > set (int) (*&constant) = 444
+(gdb) > set *0x804a000 = 33
+```
+
+#### BIOS引导扇区
+
+##### 关键地址
+
+1) 0x0 = 中断向量表 - 我们的中断表就存在于内存的最底层。我们所有的中断调用都存在于此。  
+  
+2) 0x400 = BIOS 数据区 - 这里存储有关可启动设备状态的变量。  
+  
+3) 0x7c00 = 已加载引导扇区 - 这里有我们的机器代码，这些代码将被引导加载器固件加载到 RAM 中（注：固件只是在操作系统运行之前运行的代码，就像我们正在做的那样）。  
+  
+4) 0x7e00 = 空闲区 - 这是您可以开发的堆栈区。  
+  
+5) 0x9fc00 = 扩展 BIOS 数据区 - 保存磁盘轨道缓冲区和其他连接设备的数据，因为目前还没有文件系统。  
+  
+6) 0xa0000 = 视频内存 - BIOS 在启动时将视频内存映射到这里。  
+  
+7) 0xc0000 = BIOS - BIOS 正式所在区域。  
+  
+8) 0x100000 = 可用 - 可以开发的额外空间。
+
+
+##### 示例代码
+
+```nasm
+loop:
+    jmp loop
+
+db 0x10 ; 定义一个byte
+db 'Welcome To The Machine' ; 定义多个byte
+
+times 0x1fe-($-$$) db 0 ; 重复多次
+; $ 表示当前地址, $$ 表示当前section起始地址
+; 这里表示(512-2) - 已使用地址 都用0填充
+dw 0xaa55 ; 定义一个字 写入后为 55 AA
+```
+
+```asm
+[org 0x7c00] ; 指定程序的起始地址为0x7C00
+
+mov bp, 0xffff ; 将bp寄存器设置为0xFFFF，即栈的底部
+mov sp, bp ; 将sp寄存器设置为bp寄存器的值，即栈的顶部等于栈底，从而创建了一个空的栈。
+
+call set_video_mode ; 调用set_video_mode函数
+
+call get_char_input ; 调用get_char_input函数
+
+jmp $ ; 无条件跳转到当前位置，也就是一个死循环，程序将一直停留在此处。
+
+set_video_mode:
+    mov al, 0x03 ; 设置ax低8位
+    mov ah, 0x00 ; 设置ax高8位
+    int 0x10 ; 调用BIOS中断向量0x10，设置显卡的图形模式
+    ret
+
+get_char_input:
+    xor ah, ah ; 将ah寄存器（ax高8位）清零，以准备调用BIOS中断0x16（键盘输入）
+    int 0x16 ; 调用BIOS中断0x16，等待用户按下键盘上的任意键，并将其保存在al寄存器中
+
+    cmp al, 0x30 ; 比较用户输入的字符是否小于ASCII码值0x30（即数字0）
+    jl get_char_input ; 如果小于则跳转到get_char_input
+    cmp al, 0x39 ; 比较用户输入的字符是否小于ASCII码值0x39（即数字9）
+    jg get_char_input ; 如果大于则跳转到get_char_input
+
+    mov ah, 0x0e ; 将ah寄存器设置为0x0E，以准备调用BIOS中断0x10（视频输出）
+    int 0x10 ; 调用BIOS中断0x10，将用户输入的字符输出到屏幕上
+
+    jmp get_char_input ; 无条件跳转回get_char_input函数开头，等待用户输入下一个字符
+
+times 0x1fe-($-$$) db 0 ; 用0填充512字节内没有使用到的位置
+dw 0xaa55 ; 以 55 AA 作为结尾
+```
+
+编译
+```shell
+nasm bootsector.asm -f bin -o boots
+ector.bin
+```
 
 ### JS逆向
 

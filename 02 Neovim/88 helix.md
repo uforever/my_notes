@@ -1227,10 +1227,10 @@ select = "underline"
 '[' = ']'
 '"' = '"'
 '`' = '`'
-'<' = '>'
 "'" = "'"
+# '<' = '>'
 
-[editor.whitespace]
+# [editor.whitespace]
 # render = "all"
 
 [editor.indent-guides]
@@ -1240,8 +1240,8 @@ character = "▏"
 [editor.gutters.line-numbers]
 min-width = 1
 
-[editor.soft-wrap]
-enable = true
+# [editor.soft-wrap]
+# enable = false
 
 [editor.smart-tab]
 supersede-menu = true
@@ -1271,23 +1271,42 @@ k = "normal_mode"
 ## `languages.toml`
 
 ```toml
+# GAS
+[[language]]
+name = "gas"
+indent = { tab-width = 4, unit = "    " }
+
 # HTML
 [[language]]
 name = "html"
 auto-format = false
-soft-wrap.enable = false
+# soft-wrap.enable = false
+
+[language.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+'`' = '`'
+"'" = "'"
+'<' = '>'
 
 # JavaScript
 [[language]]
 name = "javascript"
 auto-format = false
-soft-wrap.enable = false
+# soft-wrap.enable = false
 
 # JSON
 [[language]]
 name = "json"
 auto-format = false
-soft-wrap.enable = false
+# soft-wrap.enable = false
+
+# NASM
+[[language]]
+name = "nasm"
+indent = { tab-width = 4, unit = "    " }
 
 # Python
 [[language]]
@@ -1315,14 +1334,4 @@ command = "clippy"
 [[language]]
 name = "toml"
 formatter = { command = "taplo", args = ["fmt", "-"] }
-
-# NASM
-[[language]]
-name = "nasm"
-indent = { tab-width = 4, unit = "    " }
-
-# GAS
-[[language]]
-name = "gas"
-indent = { tab-width = 4, unit = "    " }
 ```

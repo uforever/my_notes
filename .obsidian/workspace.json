@@ -4,15 +4,19 @@
     "type": "split",
     "children": [
       {
-        "id": "f8adade10118f5c8",
+        "id": "9ac3a9fe29b08037",
         "type": "tabs",
         "children": [
           {
-            "id": "db2a4daa54c33c60",
+            "id": "8b719b2e9d78317c",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {}
+              "type": "markdown",
+              "state": {
+                "file": "README.md",
+                "mode": "source",
+                "source": false
+              }
             }
           }
         ]
@@ -73,8 +77,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "bdcab03c1ebed740",
@@ -90,6 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "README.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -106,6 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -127,7 +132,9 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {}
+              "state": {
+                "file": "README.md"
+              }
             }
           },
           {
@@ -159,35 +166,35 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "0784870a8a96b129",
+  "active": "8b719b2e9d78317c",
   "lastOpenFiles": [
+    "06 practices/28 Funbox2.md",
+    "06 practices/21 Cereal.md",
+    "06 practices/12 Fawkes.md",
+    "03 Awesome Command Line/11 安全工具.md",
+    "05 Penetration Test/02 主动信息收集.md",
+    "07 More A&D/06 Web.md",
+    "06 practices/01 Medium_socialnetwork.md",
+    "03 Awesome Command Line/08 下载文件.md",
+    "05 Penetration Test/04 Web应用攻击.md",
+    "06 practices/25 DarkHole2.md",
     "05 Penetration Test/11 权限提升.md",
     "05 Penetration Test/17 内网渗透.md",
-    "07 More A&D/04 Crypto.md",
-    "07 More A&D/05 Mobile.md",
-    "07 More A&D/06 Web.md",
-    "05 Penetration Test/18 破解.md",
-    "05 Penetration Test/04 Web应用攻击.md",
-    "06 practices/28 Funbox2.md",
-    "06 practices/22 Tomato.md",
-    "06 practices/21 Cereal.md",
-    "05 Penetration Test/20 CVE.md",
-    "06 practices/12 Fawkes.md",
-    "05 Penetration Test/02 主动信息收集.md",
-    "02 Neovim/07 自动补全.md",
-    "06 practices/24 Presidential.md",
-    "03 Awesome Command Line/11 安全工具.md",
     "06 practices/06 EvilBox1.md",
-    "06 practices/01 Medium_socialnetwork.md",
     "06 practices/02 easy_cloudantivirus.md",
-    "06 practices/10 hacksudo.md",
-    "06 practices/25 DarkHole2.md",
-    "0006.jpg",
-    "02 Neovim/88 helix.md",
     "05 Penetration Test/10 杀毒规避.md",
     "06 practices/04 AdmX_new.md",
-    "05 Penetration Test/09 传输后门.md",
-    "04 Excellent Graphical Tools/01 跨平台工具.md",
+    "06 practices/20 Geminiv2.md",
+    "07 More A&D/04 Crypto.md",
+    "07 More A&D/05 Mobile.md",
+    "05 Penetration Test/18 破解.md",
+    "06 practices/22 Tomato.md",
+    "05 Penetration Test/20 CVE.md",
+    "02 Neovim/07 自动补全.md",
+    "06 practices/24 Presidential.md",
+    "06 practices/10 hacksudo.md",
+    "0006.jpg",
+    "02 Neovim/88 helix.md",
     "assets/registers.png",
     "未命名.canvas",
     "Pasted image 20231228104747.png",

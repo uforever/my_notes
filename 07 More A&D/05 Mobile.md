@@ -29,6 +29,11 @@ mv cacert.pem 9a5ba575.0
 # 复制到系统目录
 adb root
 adb remount
+# 不行的话可以
+# mount -o rw,remount /
+# 也不好用
+# 或者在系统编译阶段将证书加入到system/ca-certificates/files/目录中
+
 adb push 9a5ba575.0 /sdcard/
 adb shell
 z2_plus:/ # mv /sdcard/9a5ba575.0 /system/etc/security/cacerts/
@@ -1994,6 +1999,43 @@ static jint RegisterNatives(
 }
 ```
 
+
+### 修改内核源码
+
+```shell
+# 加载编译环境
+source build/envsetup.sh
+# breakfast <device_name>
+breakfast z2_plus
+# 查看内核配置文件位置 位于设备树目录下的BoardConfig.mk
+cat device/zuk/z2_plus/BoardConfig.mk
+# TARGET_KERNEL_CONFIG := z2_plus_defconfig
+
+# 切换到内核目录下
+cd kernel/zuk/msm8996/
+# find ./ -type f -name z2_plus_defconfig
+# 复制配置文件
+cp ./arch/arm64/configs/z2_plus_defconfig .config
+# 启动图形化配置界面
+make menuconfig
+# 先加载.config文件
+# 然后通过/查找目标配置
+# 我这里以CONFIG_KALLSYMS和CONFIG_KALLSYMS_ALL为例
+# 能够查到配置项所在的位置
+# 修改后覆盖保存.config
+# 备份原配置文件 使用.config进行替换
+
+### !!!上述过程繁琐且不好用!!!
+# 还是先备份z2_plus_defconfig
+# 然后直接修改最简单
+
+# 清除缓存
+make mrproper
+# 切换到根目录
+croot
+# 重新编译bootimage
+make bootimage
+```
 ### unidbg
 
 #### 简单示例

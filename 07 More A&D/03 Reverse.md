@@ -527,7 +527,7 @@ exit:
 | 命令 | 源自 | 功能 |
 | ---- | ---- | ---- |
 | aaa | analyze | 自动分析二进制文件 |
-| afl | analyze | 列出所有函数 |
+| e | analyze | 列出所有函数 |
 | pdf | print | 反汇编当前函数 |
 | pdg | print | 显示当前函数调用图 |
 | iz | imports | 列出导入的符号 |
@@ -926,10 +926,110 @@ $$
 （3）顺序语句代替分支
 
 
-#### IDA 使用
+#### IDA 使用经验
 
-在IDA中，正偏移为参数（argc、argv、envp），负偏移为局部变量
-双击局部变量，`n` 键重命名，`*` 键转换为数组 ，`Esc` 返回反汇编视图
+```
+字符串表		<S-F12>
+交叉引用表	x
+全局交叉引用	<C-A-x>
+高亮锁定
+强制类型转换开关	\
+数据类型转换	d
+取消解释		u
+修复为枚举类型	m
+解释为指令	c
+创建函数		p
+识别为字符	r
+注释		;
+引用关系图（以函数为起点或终点）
+立即数搜索
+指令/文本搜索（通常是SVC EOR XOR等指令）
+字节序列搜索
+补丁(patch)表
+指令级别Trace（去混淆、花指令 todo实际运用）
+fork双进程调试（设置死循环等待）
+frida暂停模式调试.init	linker64 call_array
+反编译为call指令（vmp 指令修复）	Edit->Other->Decompile as call
+栈不平衡wrong sp value	Options->General->Stack pointer
+stack frame is too big	Options->General->Stack pointer
+跳转表修复	Edit->Other->Specify switch idiom
+函数大小限制	cfg/hexrays.cfg	MAX_FUNCSIZE
+golang函数反编译失败	y键修改函数类型 删掉参数即可
+IDAPython脚本编程		代码补全：设置PYTHONPATH环境变量到ida安装中的python目录
+断点列表	分组管理	批量操作
+微码	结构定义hexrays.hpp
+伪代码修复
+
+
+动态调试
+运行直到断点	F9
+单步步入		F7
+单步步过		F8
+退出当前函数	<C-F7>
+运行到光标位置	F4
+setIP（动态调试时右键）
+硬件断点(隐蔽效果更好)
+内存断点（即读/写硬件断点）
+条件断点	Edit breakpoint->Condition->选择函数和语言
+
+
+扣代码头文件defs.h
+
+
+插件
+LazyIDA		318,657	'idaapi' has no attribute 'BWN_DUMP'
+		722 	'idaapi' has no attribute 'inf_is_32bit'
+keypatch(pip install keystone-engine)
+BinDiff		<C-6>
+Lucid
+
+
+花指令
+jz jnz
+jz loc+1/2
+
+
+Decompile as call 指令修复模板
+int __usercall mysyscall@<eax>(int num@<eax>)
+__int64 myreadfs()
+
+
+wrong sp value不平衡修复
+看函数首位是否对称 如果对称 说明没问题 有花指令误导了分析结果
+找到破坏栈平衡的指令 如果不会被执行 可以直接nop掉
+或者将原来的分支指令 转变为无条件跳转 将破坏栈的部分进行undefine 去除定义操作再进行反编译
+
+
+IDAPython
+寄存器操作 xmm寄存器（特殊）
+调试内存操作 本地内存操作
+反汇编 下一条指令地址
+交叉引用分析 批量设置断点
+获取基地址 u c p键功能
+基本块遍历 指令遍历
+条件断点	生成微码
+微码插件（实现Decompile as call等功能）
+Hexrays_Hooks
+
+
+伪代码修复
+类型修复 如函数的全部交叉引用都不使用返回值可以修改为void 直接按v键也可以
+点进函数调用，重新分析，可能会产生不一样的结果
+*(_BYTE *)(a + x)或 *(_DWORD *)(a + x)等形式可能是由于指针类型被识别错误，改为适合的指针类型即可修复
+数组长度修复 一个数组可能会被ida分开识别 可以通过修改长度修复 注意看栈指针是否能对应上
+定义数组 先通过d键将首个元素长度确定下来 再右键创建数组指定长度
+枚举类型修复 ida内置了常见的枚举值 可以直接搜索、引用、修复
+结构体修复 先确定结构体大小（有内存分配可以直接确定 局部变量unk_xxxx可以根据偏移的差间接确定）
+创建相等大小的匿名结构体 应用到程序中（包括子函数定义中 按y键手动输入或者右键Convert to struct *）
+根据程序内容 逐步修复名称n、类型d
+如LODWORD HIDWORD 修复为双字32位
+有循环赋值的 修复为数组
+有打印信息的 根据输出判断字段含义
+如果进展不下去了 需要看看有没有涉及的函数 尤其是返回值（比如void）也需要修复
+根据交叉引用 判断字段类型
+虚表修复 根据偏移建立虚表结构体
+再根据大小创建类/结构体 第一个字段为虚表指针 将自动识别的类map到自己定义的类上
+```
 ### JS逆向
 
 #### 去混淆

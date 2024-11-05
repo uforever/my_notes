@@ -10,7 +10,7 @@ openssl x509 -in ca.crt -text -noout
 openssl x509 -inform DER -in ca.crt -text -noout
 
 # DER格式需要先进行转换
-# PEM格式不需要
+# PEM格式（即base64明文形式）不需要
 openssl x509 -inform DER -in cacert.der -out cacert.pem
 
 # 提取公钥
@@ -41,6 +41,12 @@ z2_plus:/ # chmod 644 /system/etc/security/cacerts/9a5ba575.0
 z2_plus:/ # reboot
 ```
 
+#### SSL pinning
+
+```
+charles抓包会报错：
+SSL handshake with client failed: An unknown issue occurred processing the certificate (certificate_unknown)
+```
 ### Root检测
 
 [Shamiko](https://github.com/LSPosed/LSPosed.github.io)
@@ -1274,6 +1280,45 @@ function HookNative() {
 setTimeout(HookNative, 3000);
 ```
 
+#### 反frida调试
+
+- 检测进程 修改文件名即可
+
+- 检测默认端口（27042）即0x（69A2）
+
+```bash
+netstat -tulnp | grep 27042
+# tcp        0      0 127.0.0.1:27042         0.0.0.0:*               LISTEN      18280/frida-server-16.5.1-android-arm64
+cat /proc/net/tcp | grep :69A2
+# 45: 0100007F:CFD7 0100007F:69A2 01 00000000:00000000 00:00000000 00000000  2000        0 848357 1 0000000000000000 20 4 30 10 -1
+
+# 绕过方式：指定端口运行
+./frida-server -l 0.0.0.0:8888
+```
+
+- ptrace 已经被ptrace了，有条件的话可以spwan方式启动
+
+- 当前进程的maps信息中会有frida-agent动态库
+通过使用魔改版（如hluda）隐藏特征
+
+```bash
+cat /proc/10411/maps | grep frida
+# 6fcaed7000-6fcb8f1000 r--p 00000000 00:05 837927                         /memfd:frida-agent-64.so (deleted)
+# 6fcb8f2000-6fcc621000 r-xp 00a1a000 00:05 837927                         /memfd:frida-agent-64.so (deleted)
+# 6fcc621000-6fcc6f2000 r--p 01748000 00:05 837927                         /memfd:frida-agent-64.so (deleted)
+# 6fcc6f3000-6fcc70f000 rw-p 01819000 00:05 837927                         /memfd:frida-agent-64.so (deleted)
+```
+
+- hook特征
+
+```
+native层: inline-hook
+函数开头变为了: 0xd61f020058000050
+
+java层: 转为native函数
+特征: & 0x80000 == 0
+变为：& 0x80000 != 0
+```
 
  ### objection
 

@@ -11,8 +11,14 @@
             "id": "25c7142310219b53",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {}
+              "type": "markdown",
+              "state": {
+                "file": "07 More A&D/05 Mobile.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "05 Mobile"
             }
           }
         ]
@@ -35,7 +41,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical"
-              }
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
             }
           },
           {
@@ -50,7 +58,9 @@
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical"
-              }
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
             }
           },
           {
@@ -58,7 +68,9 @@
             "type": "leaf",
             "state": {
               "type": "starred",
-              "state": {}
+              "state": {},
+              "icon": "lucide-file",
+              "title": "插件不再活动"
             }
           },
           {
@@ -66,14 +78,17 @@
             "type": "leaf",
             "state": {
               "type": "bookmarks",
-              "state": {}
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
             }
           }
         ]
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "bdcab03c1ebed740",
@@ -89,7 +104,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "07 More A&D/03 Reverse.md",
+                "file": "09 IDA/01 Basic.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -97,7 +112,9 @@
                 "searchQuery": "",
                 "backlinkCollapsed": false,
                 "unlinkedCollapsed": true
-              }
+              },
+              "icon": "links-coming-in",
+              "title": "01 Basic 的反向链接列表"
             }
           },
           {
@@ -106,10 +123,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "07 More A&D/03 Reverse.md",
+                "file": "09 IDA/01 Basic.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
-              }
+              },
+              "icon": "links-going-out",
+              "title": "01 Basic 的出链列表"
             }
           },
           {
@@ -120,7 +139,9 @@
               "state": {
                 "sortOrder": "frequency",
                 "useHierarchy": true
-              }
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
             }
           },
           {
@@ -129,8 +150,10 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "07 More A&D/03 Reverse.md"
-              }
+                "file": "09 IDA/01 Basic.md"
+              },
+              "icon": "lucide-list",
+              "title": "01 Basic 的大纲"
             }
           },
           {
@@ -142,7 +165,9 @@
                 "sortOrder": "frequency",
                 "showSearch": false,
                 "searchQuery": ""
-              }
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
             }
           }
         ],
@@ -150,7 +175,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -162,8 +188,10 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "0784870a8a96b129",
+  "active": "25c7142310219b53",
   "lastOpenFiles": [
+    "09 IDA/01 Basic.md",
+    "09 IDA",
     "07 More A&D/05 Mobile.md",
     "07 More A&D/06 Web.md",
     "05 Penetration Test/04 Web应用攻击.md",
@@ -190,7 +218,6 @@
     "02 Neovim/07 自动补全.md",
     "02 Neovim/06 语言服务.md",
     "02 Neovim/05 语法分析.md",
-    "02 Neovim/04 颜色主题.md",
     "0006.jpg",
     "assets/registers.png",
     "Pasted image 20231228104747.png",

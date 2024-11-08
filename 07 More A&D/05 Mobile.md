@@ -2071,8 +2071,11 @@ make menuconfig
 # 备份原配置文件 使用.config进行替换
 
 ### !!!上述过程繁琐且不好用!!!
-# 还是先备份z2_plus_defconfig
+# 还是先备份arch/arm64/configs/z2_plus_defconfig
 # 然后直接修改最简单
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_OVERLAY_FS=y
 
 # 清除缓存
 make mrproper

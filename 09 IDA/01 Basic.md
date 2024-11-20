@@ -168,6 +168,248 @@
 - Edit an enum member 编辑枚举成员
 - Delete an enum member 删除枚举成员
 
+##### Segments
+
+```
+VirtualAddress = LinearAddress - (SegmentBase << 4);
+LinearAddress = (SegmentBase << 4) + VirtualAddress;
+SegmentBase = (LinearAddress - VirtualAddress) >> 4;
+
+# 如 F000:1000..F000:2000
+# 其中0xF000表示base
+# 0x1000-0x2000是VirtualAddress
+start = (0xF000 << 4) + 0x1000 = 0xF1000
+end = (0xF000 << 4) + 0x2000 = 0xF2000
+
+# 假设需要创建一个占用虚拟地址0x8000-0xC000的段
+# 假设我们选择一个线性地址0x20000 即start
+base = (LinearAddress - VirtualAddress) >> 4
+     = (0x20000 - 0x8000) >> 4
+     = 0x18000 >> 4
+     = 0x1800
+
+# 段基地址 大于16位时 IDA会自动创建选择器 这时会先经过选择器映射
+# 如 (5 -> 0x200000)
+VirtualAddress = LinearAddress - (SelectorValue(SegmentBase) << 4)
+# 可以手动分配选择器
+```
+
+- Create a new segment 创建新段 选择范围后会以所选作为区间
+- Delete a segment 删除段
+- Edit segment 修改段
+- Move a segment 移动段
+- Rebase program 程序rebase
+- Change segment translation 翻译段
+- Set Default Segment Register Value 设置段寄存器默认值
+
+##### Patch
+
+可以创建一个差异文件并使用外部工具来应用补丁，也可以使用IDA将补丁直接应用到文件。
+
+```
+CD 21          - bytes 0xCD, 0x21
+21CD           - bytes 0xCD, 0x21 (the order depends on the endiannes)
+"Hello", 0     - the null terminated string "Hello"
+L"Hello"       - 'H', 0, 'e', 0, 'l', 0, 'l', 0, 'o', 0
+B8 ? ? ? ? 90  - byte 0xB8, 4 bytes with any value, byte 0x90
+```
+
+- Change byte
+- Change word
+- Apply patches to input file 将补丁直接应用于输入文件
+- Assemble 汇编
+
+##### Other
+
+- Create alignment directive 创建对齐指令
+- Specify instruction representation manually 手动修改指令
+- Specify instruction color 指定指令颜色
+- Hide/unhide a border
+
+#### Jump
+
+##### Jump immediate
+
+立即跳转 快捷键 `<CR>` 双击
+
+##### Jump back
+
+跳回 快捷键 `<Esc>`
+
+##### Empty navigation stack
+
+清空跳转堆栈
+
+##### Jump to address
+
+跳转到指定地址
+
+##### Jump to function
+
+跳转到函数
+
+##### Jump to Entry Point
+
+跳转到入口点 快捷键 `<C-e>`
+
+##### Jump to the specified file offset
+
+跳转到指定的文件偏移量
+
+##### Jump to cross reference
+
+跳转到交叉引用
+
+##### Jump to the specified segment
+
+跳转到指定段
+
+##### Jump to the specified segment register change point
+
+跳转到指定的段寄存器更改点
+
+##### Jump to a problematic location
+
+跳转到有问题的位置
+
+##### Mark Position
+
+标记位置
+
+##### Jump to marked position
+
+跳转到标记的位置
+
+#### Search
+
+搜索反汇编中的内容。跳转速度相对较慢，位置也会被保存到跳转表中。
+
+##### next code
+
+搜索下一个代码
+
+##### next data
+
+搜索下一个数据
+
+##### next explored byte
+
+搜索下一个探索字节
+##### next unexplored byte
+
+搜索下一个未探索的字节
+
+##### immediate value
+
+搜索立即数
+
+##### text
+
+搜索文本
+
+##### sequence of byte
+
+搜索字节序列
+
+##### not function
+
+搜索不属于任何函数的字节
+
+##### error
+
+##### void
+
+#### View
+
+##### Open subviews
+
+- Open disassembly window 打开反汇编窗口
+- Open exports window 打开导出窗口
+- Open imports window 打开导入窗口
+- Open functions window 打开函数窗口
+```
+R - function returns to the caller
+F - far function
+L - library function
+S - static function
+B - BP based frame. IDA will automatically convert
+    all frame pointer [BP+xxx] operands to stack
+    variables.
+T - function has type information
+= - Frame pointer is equal to the initial stack pointer
+    In this case the frame pointer points to the bottom of the frame
+M - reserved
+S - reserved
+I - reserved
+C - reserved
+D - reserved
+V - reserved
+```
+- Open names window 打开名称窗口
+```
+L（深蓝色）- 库函数
+F（深蓝色）- 常规函数
+C（浅蓝色）- 指令
+A（深绿色）- 字符串文本
+D（浅绿色）- 数据
+I（紫色）- 导入名称
+```
+- Open signatures window 打开签名窗口
+- Open segments window 打开段窗口
+- Open segment registers window 打开段寄存器窗口
+- Open selectors window 打开选择器窗口（段基地址可能用到）
+- Open cross references window 打开交叉引用窗口
+- Open structures window 打开结构窗口
+- Open local types window 打开本地类型窗口
+- Open problems window 打开问题窗口
+- Open type libraries window 打开类型库窗口
+- Open strings window 打开字符串窗口
+- Open function calls window 打开函数调用窗口
+- Open notepad 打开记事本
+- Open undo history 打开撤消记录表
+
+##### Graphs
+
+- 函数流程图
+- 函数调用图
+- 当前函数被引用图
+- 当前函数主动引用图
+- 用户定义图表
+
+##### Database snapshot manager
+
+数据库快照管理器
+
+##### Calculator
+
+计算器
+
+#### Debugger
+
+#### Lumina
+
+##### Pull all metadata
+
+拉取所有元数据
+IDA将计算数据库中所有非平凡函数的校验和，并将其发送给Lumina。此操作将用于匹配和检索元数据，元数据将自动应用。在调用此命令之前建议拍摄数据库快照并保存数据库。
+
+##### Push all metadata
+
+推送所有元数据
+
+##### View all metadata
+
+查看所有元数据
+
+##### Pull current function metadata  
+
+拉取当前函数元数据
+
+##### Push current function metadata  
+
+推送当前函数元数据
+
+
 查看所有快捷键：**Options -> Show command palette...**
 
 ### 工具栏

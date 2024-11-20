@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07 More A&D/05 Mobile.md",
+                "file": "07 More A&D/02 Pwn.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "05 Mobile"
+              "title": "02 Pwn"
             }
           }
         ]
@@ -87,8 +87,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "bdcab03c1ebed740",
@@ -190,9 +189,14 @@
   },
   "active": "25c7142310219b53",
   "lastOpenFiles": [
+    "04 Excellent Graphical Tools/03 Windows工具.md",
+    "07 More A&D/03 Reverse.md",
+    "06 practices/05 hard_socnet2.md",
+    "05 Penetration Test/05 缓冲区溢出.md",
     "09 IDA/01 Basic.md",
-    "09 IDA",
+    "09 IDA/02 IDAPython.md",
     "07 More A&D/05 Mobile.md",
+    "09 IDA",
     "07 More A&D/06 Web.md",
     "05 Penetration Test/04 Web应用攻击.md",
     "07 More A&D/04 Crypto.md",
@@ -204,7 +208,6 @@
     "08 Rust/88 实践.md",
     "05 Penetration Test/17 内网渗透.md",
     "05 Penetration Test/18 破解.md",
-    "07 More A&D/03 Reverse.md",
     "未命名.md",
     "08 Rust/06 包和模块.md",
     "08 Rust/07 常见集合.md",
@@ -214,10 +217,6 @@
     "08 Rust/02 基础语法.md",
     "05 Penetration Test/02 主动信息收集.md",
     "未命名.canvas",
-    "02 Neovim/88 helix.md",
-    "02 Neovim/07 自动补全.md",
-    "02 Neovim/06 语言服务.md",
-    "02 Neovim/05 语法分析.md",
     "0006.jpg",
     "assets/registers.png",
     "Pasted image 20231228104747.png",

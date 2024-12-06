@@ -113,7 +113,24 @@ adb shell 'am start org.lsposed.manager/.ui.activity.MainActivity'
 ### 反编译
 
 ```Shell
+# 反编译
 apktool d app-release.apk -o outdir
+# 打包
+apktool b demoapp -o demoapp2.apk
+apktool b --use-aapt2 demoapp -o demoapp2.apk
+
+# 生成新签名
+keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-alias
+# 输入密码和一系列信息生成 my-release-key.jks
+
+# 对齐
+zipalign -v -p 4 demoapp2.apk demoapp2-aligned.apk
+
+# 签名
+apksigner sign --ks my-release-key.jks --ks-pass pass:123456 --out demoapp2-final.apk demoapp2-aligned.apk
+
+# GUI工具
+# https://qwertycube.com/apk-editor-studio/
 ```
 
 ### 破解思路
@@ -121,16 +138,13 @@ apktool d app-release.apk -o outdir
 1. 错误提示信息是关键，通常属于字符串资源，可能硬编码，也可能引用自 `res/values/strings.xml` 文件，其中的内容在打包时会进入 `resources.arsc` 文件。如果反编译成功，就能被解密出来。以 `abc_` 开头的字符串是系统默认生成的，其它都是程序中使用的字符串。搜索错误提示，可以看到其对应的 `name`  ，再搜索 `name` 可以在 `public.xml` 中找到其对应的 `id` ，再搜索其 `id` ，看看是否出现在 `smali` 代码中。
 
 
-### 回编译
+### 动态调试
 
 ```Shell
-apktool b outdir
-```
-
-### 签名
-
-```Shell
-signapk outdir/dist/app-release.apk
+# 使用jeb
+# <C-b> 下断点
+# 有些变量的值看不到 需要跟到函数里面才能看到
+# 有些变量的值需要展开才能看到
 ```
 
 ### 杂项
@@ -653,7 +667,11 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 ### 日志插桩
 
 ```
-invoke-static {vXX}, Lcom/mtools/LogUtils;->v(Ljava/lang/Object;)V
+使用方法：
+将com目录以合并的方式复制到smali目录下
+需要插桩的位置插入smali代码
+invoke-static {v?}, Lcom/mtools/LogUtils;->v(Ljava/lang/Object;)V
+在算法助手APP的日志中查看（需要在LSPosed和算法助手中都打开相应开关）
 ```
 ### Frida逆向
 

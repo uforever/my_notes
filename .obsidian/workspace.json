@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "09 CrackMe/03 BDI.md",
+                "file": "07 More A&D/05 Mobile.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 BDI"
+              "title": "05 Mobile"
             }
           }
         ]
@@ -149,10 +149,10 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "09 IDA/01 Basic.md"
+                "file": "07 More A&D/05 Mobile.md"
               },
               "icon": "lucide-list",
-              "title": "01 Basic 的大纲"
+              "title": "05 Mobile 的大纲"
             }
           },
           {
@@ -174,8 +174,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -189,8 +188,8 @@
   },
   "active": "b57d408bdf9c6da7",
   "lastOpenFiles": [
-    "09 CrackMe/02 IDAPython.md",
     "09 CrackMe/03 BDI.md",
+    "09 CrackMe/02 IDAPython.md",
     "09 CrackMe/01 IDA.md",
     "06 practices/29 dawn.md",
     "07 More A&D/06 Web.md",

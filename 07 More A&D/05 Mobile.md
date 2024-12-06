@@ -1332,6 +1332,10 @@ cat /proc/10411/maps | grep frida
 ```
 native层: inline-hook
 函数开头变为了: 0xd61f020058000050
+其中0x58000050 表示 ldr x16, [pc, #8]
+加载地址到寄存器中
+0xd61f0200 表示 br x16
+根据寄存器中的值进行跳转
 
 java层: 转为native函数
 特征: & 0x80000 == 0

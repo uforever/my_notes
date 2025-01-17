@@ -198,6 +198,227 @@ const result = CryptoJS.AES.decrypt(input, key);
 console.log(CryptoJS.enc.Utf8.stringify(result));
 ```
 
+### 差分故障分析（DFA）
+
+以AES128为例，其扩散性主要由每一轮的列混合操作提供。
+DFA攻击常见的目标是轮密钥（round key）而非加密过程中的明文或密文。最后一轮密钥足以恢复原始AES-128主密钥，因为AES密钥调度是完全可逆的。
+在最后两次列混合操作之间，产生一个字节的差异，会对最终的输出结果产生四个字节的影响。至少需要8次故障（每4字节列2个）。如下
+[SideChannelMarvels/JeanGrey: Tools to perform differential fault analysis attacks (DFA).](https://github.com/SideChannelMarvels/JeanGrey)
+
+```python
+#!/usr/bin/env python3
+import phoenixAES
+
+with open('tracefile', 'wb') as t:
+# 加法一定会让值发生改变 针对列所以是4*i
+# vec[4 * i] = vec[4 * i].wrapping_add(0x99);
+# vec[4 * i] = vec[4 * i].wrapping_add(0x66);
+    t.write("""
+d2ca4c3d81aa97144304ac414b1b6153
+c3ca4c3d81aa976e430441414bc66153
+d25a4c3d16aa97144304ac224b1b7453
+d2ca613d815097140504ac414b1b616a
+d2ca4ca481aa5b144336ac416e1b6153
+dfca4c3d81aa97ad43046c414b4e6153
+d2fa4c3dc3aa97144304ac444b1b5553
+d2ca8a3d814397140a04ac414b1b61d6
+d2ca4c8b81aa28144364ac41231b6153
+""".encode('utf8'))
+
+phoenixAES.crack_file('tracefile')
+```
+
+```python
+import phoenixAES
+
+data = """875fe01c35e3399c9e9c8a0a4f3e8a68
+8c5fe01c35e339179e9c2d0a4f0e8a68
+6a5fe01c35e339ed9e9c2c0a4f268a68
+2b5fe01c35e339559e9cf60a4fa68a68
+835fe01c35e339259e9cc60a4fd88a68
+885fe01c35e3393d9e9c450a4f548a68
+ec5fe01c35e339ac9e9c740a4f038a68
+fd5fe01c35e339da9e9c7c0a4fb08a68
+715fe01c35e339c79e9ce50a4f108a68
+b35fe01c35e339779e9c950a4f9b8a68
+075fe01c35e339e49e9c9c0a4f498a68
+625fe01c35e3396c9e9c810a4f238a68
+a45fe01c35e339d89e9cc50a4fe28a68
+1a5fe01c35e339759e9c850a4fb88a68
+f05fe01c35e339639e9cad0a4f658a68
+fb5fe01c35e339cc9e9cf00a4f7f8a68
+485fe01c35e339e69e9cb10a4f318a68
+"""
+
+idx = [0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15]
+
+def transpose(data):
+    return bytes([data[idx[i]] for i in range(16)])
+
+
+with open("./crackfile",'w') as f:
+    for line in data.splitlines():
+        if line:
+            line = transpose(bytes.fromhex(line)).hex()
+            f.write(line + '\n')
+
+phoenixAES.crack_file("crackfile",[],True,False,verbose=2)
+```
+
+通过最终轮密钥和任意一个中间轮密钥（128bit只用最终轮就够了）打印所有轮密钥
+[SideChannelMarvels/Stark: Repository of small utilities related to key recovery](https://github.com/SideChannelMarvels/Stark)
+```bash
+.\aes_keyschedule 957ceed29ab914260ca5ef870c059557 10
+# 输出中K00即为主密钥
+```
+
+unidbg 进行DFA攻击案例
+```java
+package com.luckin;
+
+import com.github.unidbg.AndroidEmulator;
+import com.github.unidbg.Emulator;
+import com.github.unidbg.Module;
+import com.github.unidbg.arm.backend.Backend;
+import com.github.unidbg.arm.backend.ReadHook;
+import com.github.unidbg.arm.backend.UnHook;
+import com.github.unidbg.arm.context.RegisterContext;
+import com.github.unidbg.debugger.BreakPointCallback;
+import com.github.unidbg.linux.android.AndroidEmulatorBuilder;
+import com.github.unidbg.linux.android.AndroidResolver;
+import com.github.unidbg.linux.android.dvm.AbstractJni;
+import com.github.unidbg.linux.android.dvm.DalvikModule;
+import com.github.unidbg.linux.android.dvm.VM;
+import com.github.unidbg.memory.Memory;
+import com.github.unidbg.memory.MemoryBlock;
+import com.github.unidbg.pointer.UnidbgPointer;
+import unicorn.ArmConst;
+
+import java.io.File;
+import java.util.Random;
+
+public class LKAES extends AbstractJni {
+    private final AndroidEmulator emulator;
+    private final VM vm;
+    private final Module module;
+    public int times = 0;
+
+    public LKAES() {
+        emulator = AndroidEmulatorBuilder.for32Bit().build();
+        final Memory memory = emulator.getMemory();
+        memory.setLibraryResolver(new AndroidResolver(23));
+        // 通过安装包运行 可以规避一部分检查
+        vm = emulator.createDalvikVM(new File("unidbg-android/src/test/resources/apks/lucky.apk"));
+        vm.setVerbose(true);
+        // 加载共享库
+        DalvikModule dm = vm.loadLibrary("cryptoDD", true);
+        module = dm.getModule();
+        // 设置JNI
+        vm.setJni(this);
+        dm.callJNI_OnLoad(emulator);
+    }
+
+    public static String toHexString(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            // 将每个字节转换为两位的16进制数，不足两位前面补零
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString().toUpperCase();  // 可选：将字母转换为大写
+    }
+
+    public void call_wbaes() {
+        times = 0;
+        MemoryBlock inblock = emulator.getMemory().malloc(16, true);
+        UnidbgPointer inPtr = inblock.getPointer();
+        MemoryBlock outblock = emulator.getMemory().malloc(16, true);
+        UnidbgPointer outPtr = outblock.getPointer();
+        byte[] stub = new String("0123456789abcdef").getBytes();
+        inPtr.write(0, stub, 0, stub.length);
+
+        // 目标函数 wbaes_encrypt_ecb 地址 通过地址主动调用
+        module.callFunction(emulator, 0x17bd5, inPtr, 16, outPtr, 0);
+
+        String ret = toHexString(outPtr.getByteArray(0, 0x10));
+        System.out.println(ret);
+        inblock.free();
+        outblock.free();
+    }
+
+    public static int randInt(int min, int max) {
+        Random rand = new Random();
+        return rand.nextInt((max - min) + 1) + min;
+    }
+
+    public void dfaAttack() {
+        // 列混合函数 wbShiftRows 入口
+        emulator.attach().addBreakPoint(module.base + 0x14F98 + 1, new BreakPointCallback() {
+            UnidbgPointer pointer;
+
+            @Override
+            public boolean onHit(Emulator<?> emulator, long address) {
+                times++;
+                RegisterContext registerContext = emulator.getContext();
+                pointer = registerContext.getPointerArg(0);
+                emulator.attach().addBreakPoint(registerContext.getLRPointer().peer, new BreakPointCallback() {
+                    @Override
+                    public boolean onHit(Emulator<?> emulator, long address) {
+                        if (times == 9) {
+                            pointer.setByte(randInt(0, 15), (byte) randInt(0, 0xff));
+                        }
+                        return true;
+                    }
+                });
+
+                return true;
+            }
+        });
+    }
+
+    public void traceAESRead() {
+        emulator.getBackend().hook_add_new(new ReadHook() {
+            @Override
+            public void hook(Backend backend, long address, int size, Object user) {
+                long now = emulator.getBackend().reg_read(ArmConst.UC_ARM_REG_PC).intValue();
+                if ((now > module.base) & (now < (module.base + module.size))) {
+                    System.out.println(now - module.base); // 原作者这里通过绘制内存访问的曲线图快速找到了列混合函数的地址
+                }
+            }
+
+            @Override
+            public void onAttach(UnHook unHook) {
+
+            }
+
+            @Override
+            public void detach() {
+
+            }
+        }, module.base, module.base + module.size, null);
+    }
+
+
+    public static void main(String[] args) {
+        LKAES lkaes = new LKAES();
+        // 原作者这里通过绘制内存访问的曲线图快速找到了列混合函数的地址
+        // lkaes.traceAESRead();
+        lkaes.dfaAttack();
+        System.out.println("---- ----");
+        for (int i = 0; i < 32; i++) {
+            lkaes.call_wbaes();
+        }
+        System.out.println("---- ----");
+
+        // lkaes.call_wbaes();
+
+        // 0123456789abcdef -> b0f59c0d48c145915fc8f6a842c4d5eb
+
+        // 输出只有四个字节改变 说明hook的位置对了
+        // b02f9c0d08c145915fc8f6a342c405eb
+    }
+}
+```
+
 ### 其它
 
 二进制幂数加密（Binary idempotent encryption）、车轮密码（Wheel Cipher [Jefferson Wheel Cipher](https://www.dcode.fr/jefferson-wheel-cipher)）、键盘密码（环绕、坐标、顺序等）、椭圆曲线加密算法（ECC）、替换密码（cryptoquip [quipqiup](https://quipqiup.com/)）、黑客语（leet/1337 [Leet Speak Translator - 1337](https://www.dcode.fr/leet-speak-1337)）、诗歌密码（Poem Code）、维吉尼亚密码（Vigenère Cipher，使用一系列凯撒密码组成密码字母表）、Brainfuck（[brainfuck](http://pablojorge.github.io/brainfuck/)）

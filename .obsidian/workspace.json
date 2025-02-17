@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "09 CrackMe/05 eBPF.md",
+                "file": "05 Penetration Test/04 Web应用攻击.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "05 eBPF"
+              "title": "04 Web应用攻击"
             }
           }
         ]
@@ -87,8 +87,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "bdcab03c1ebed740",
@@ -150,10 +149,10 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "09 CrackMe/05 eBPF.md"
+                "file": "05 Penetration Test/04 Web应用攻击.md"
               },
               "icon": "lucide-list",
-              "title": "05 eBPF 的大纲"
+              "title": "04 Web应用攻击 的大纲"
             }
           },
           {
@@ -187,11 +186,15 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "54d5a8cfc1d7e859",
+  "active": "0784870a8a96b129",
   "lastOpenFiles": [
-    "09 CrackMe/04 linker.md",
-    "09 CrackMe/05 eBPF.md",
     "07 More A&D/06 Web.md",
+    "09 CrackMe/02 IDAPython.md",
+    "08 Rust/07 常见集合.md",
+    "09 CrackMe/05 eBPF.md",
+    "09 CrackMe/01 IDA.md",
+    "09 CrackMe/04 linker.md",
+    "09 CrackMe/03 BDI.md",
     "07 More A&D/05 Mobile.md",
     "07 More A&D/04 Crypto.md",
     "07 More A&D/03 Reverse.md",
@@ -199,9 +202,6 @@
     "09 CrackMe/未命名",
     "05 Penetration Test/18 破解.md",
     "07 More A&D/01 Misc.md",
-    "09 CrackMe/01 IDA.md",
-    "09 CrackMe/03 BDI.md",
-    "09 CrackMe/02 IDAPython.md",
     "06 practices/29 dawn.md",
     "06 practices/16 Momentum.md",
     "05 Penetration Test/11 权限提升.md",
@@ -217,7 +217,6 @@
     "08 Rust/08 错误处理.md",
     "08 Rust/99 练习.md",
     "08 Rust/88 实践.md",
-    "05 Penetration Test/17 内网渗透.md",
     "未命名.canvas",
     "0006.jpg",
     "assets/registers.png",

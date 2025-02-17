@@ -150,5 +150,313 @@ ida_kernwin.info("This is a custom message dialog. Good luck with learning IDAPy
 # 获取屏幕光标处的地址
 ida_kernwin.get_screen_ea()
 # addr = ida_kernwin.get_screen_ea()
+```
 
+## 案例
+
+### IDA Trace 指令
+
+```python
+import idc
+import re
+import ida_dbg
+import ida_idd
+from idaapi import *
+import os
+
+debughook = None
+
+# 初始化完成后 手动调用一次 starthook()
+# 根据实际情况 手动或自动调用 suspend_other_thread() 绕过反调试/干扰
+
+# 将程序运行到断点位置
+
+# 设置 Tracing
+# Debugger -> Tracing -> Tracing options
+# 设置 Trace text file 路径
+# 去掉 "Trace over debugger segments" 选项
+# 选中 "Log internal instructions" 选项
+
+# 开始 Tracing
+# Debugger -> Tracing -> Instruction tracing
+
+# 放行程序
+# 运行完毕后 手动调用一次 unhook()
+# 得到了 trace.log
+
+
+def xx_hex(ea):  # 去除地址多余字符
+    return hex(ea).rstrip("L").lstrip("0x")
+
+
+def set_breakpoint(ea, isthumb=0):  # 根据地址设置断点
+    # 设置寄存器T的值为1，通常用于ARM指令集的Thumb模式
+    if isthumb:
+        idc.SetReg(ea, "T", 1)
+    # 将地址ea处的数据转换为代码，确保该地址被解释为代码段
+    # idc.MakeCode(ea)
+    idc.add_bpt(ea)
+
+
+def my_get_reg_value(register):  # 获取寄存器的值
+    # 创建一个regval_t类型的对象rv，用于存储寄存器的值
+    rv = ida_idd.regval_t()
+    # 调用ida_dbg模块的get_reg_val函数，获取指定寄存器的值，并存储到rv对象中
+    ida_dbg.get_reg_val(register, rv)
+    # 从rv对象中提取ival属性，即寄存器的整数值，赋值给current_addr变量
+    current_addr = rv.ival
+    # 返回寄存器的当前值
+    return current_addr
+
+
+def suspend_other_thread():  # 暂停其它线程
+    # 获取当前线程的ID
+    current_thread = idc.get_current_thread()
+    # 获取系统中线程的总数量
+    thread_count = idc.get_thread_qty()
+    # 遍历所有线程
+    for i in range(0, thread_count):
+        # 获取第i个线程的ID
+        other_thread = idc.getn_thread(i)
+        # 如果该线程不是当前线程
+        if other_thread != current_thread:
+            # 挂起该线程
+            idc.suspend_thread(other_thread)
+
+
+def resume_process():  # 恢复整个进程和每个线程
+    # 获取当前线程的ID
+    current_thread = idc.get_current_thread()
+    # 获取系统中线程的总数量
+    thread_count = idc.get_thread_qty()
+    # 遍历所有线程
+    for i in range(0, thread_count):
+        # 获取第i个线程的ID
+        other_thread = idc.getn_thread(i)
+        # 如果该线程不是当前线程
+        if other_thread != current_thread:
+            # 恢复该线程的执行
+            idc.resume_thread(other_thread)
+    # 恢复当前线程的执行
+    idc.resume_thread(current_thread)
+    # 恢复整个进程的执行
+    idc.resume_process()
+
+
+class MyDbgHook(DBG_Hooks):
+    """ Own debug hook class that implementd the callback functions """
+
+    def __init__(self, modules_info, skip_functions, end_ea):
+        # 调用父类的构造函数，确保父类的初始化逻辑也被执行
+        super(MyDbgHook, self).__init__()
+        # 初始化模块信息，用于存储模块相关的数据
+        self.modules_info = modules_info
+        # 初始化跳过函数列表，用于存储需要跳过的函数地址
+        self.skip_functions = skip_functions
+        # 初始化步进计数器，用于记录步进操作的次数
+        self.trace_step_into_count = 0
+        # 初始化步进大小，默认为1，表示每次步进一条指令
+        self.trace_step_into_size = 1
+        # 初始化总跟踪大小，默认为300000，表示跟踪的最大指令数
+        self.trace_total_size = 300000
+        # 初始化当前跟踪大小，用于记录已经跟踪的指令数
+        self.trace_size = 0
+        # 初始化跟踪链接寄存器，用于记录当前指令的链接地址
+        self.trace_lr = 0
+        # 初始化结束地址，用于标记调试结束的位置
+        self.end_ea = end_ea
+        # 初始化断点跟踪标志，默认为0，表示未启用断点跟踪
+        self.bpt_trace = 0
+        # 初始化日志记录器，默认为None，需要在后续代码中设置具体的日志记录器实例
+        self.Logger = None
+        # 初始化行跟踪标志，默认为0，表示未启用行跟踪
+        self.line_trace = 0
+        # 打印初始化信息，用于调试和确认初始化过程
+        print("__init__")
+
+    def start_line_trace(self):
+        # 将断点跟踪标志设置为0，表示不进行断点跟踪
+        self.bpt_trace = 0
+        # 将行跟踪标志设置为1，表示开始进行行跟踪
+        self.line_trace = 1
+        # 调用start_hook方法，开始设置钩子，用于实现行跟踪功能
+        self.start_hook()
+
+    def start_hook(self):
+        # 调用对象的 hook 方法
+        self.hook()
+        # 打印字符串 "start_hook" 到控制台
+        print("start_hook")
+
+    def dbg_process_start(self, pid, tid, ea, name, base, size):
+        print("Process started, pid=%d tid=%d name=%s" % (pid, tid, name))
+
+    def dbg_process_exit(self, pid, tid, ea, code):
+        # 调用unhook方法，可能是用于解除之前设置的钩子（hook）
+        self.unhook()
+        # 检查Logger属性是否存在，如果存在则调用log_close方法，可能是用于关闭日志记录
+        if self.Logger:
+            self.Logger.log_close()
+        # 打印进程退出的信息，包括进程ID(pid)、线程ID(tid)、退出地址(ea)和退出代码(code)
+        print("Process exited pid=%d tid=%d ea=0x%x code=%d" %
+              (pid, tid, ea, code))
+
+    def dbg_process_detach(self, pid, tid, ea):
+        # 调用unhook方法，可能是用于解除之前设置的钩子（hook）
+        self.unhook()
+        # 调用Logger对象的log_close方法，可能是用于关闭日志文件或清理日志相关资源
+        self.Logger.log_close()
+        # 返回0，表示函数执行成功，通常在函数末尾返回一个整数值作为状态码
+        return 0
+
+    def dbg_bpt(self, tid, ea):
+        # 打印断点信息，包括断点地址和线程ID
+        print("Break point at 0x%x tid=%d" % (ea, tid))
+        # 检查当前断点地址是否在结束地址列表中
+        if ea in self.end_ea:
+            # 如果是结束地址，则禁用指令跟踪和单步跟踪
+            ida_dbg.enable_insn_trace(False)
+            ida_dbg.enable_step_trace(False)
+            # 暂停进程
+            ida_dbg.suspend_process()
+            # 返回0，表示处理完成
+            return 0
+        # 如果不是结束地址，也返回0，表示处理完成
+        return 0
+
+    def dbg_trace(self, tid, ea):
+        # 打印调试信息，显示当前线程ID和地址（已注释）
+        # print("Trace tid=%d ea=0x%x" % (tid, ea))
+        # return values:
+        #   1  - do not log this trace event;
+        #   0  - log it
+        if self.line_trace:
+            in_mine_so = False
+            for module_info in self.modules_info:
+                # print (module_info)
+                so_base = module_info["base"]
+                so_size = module_info["size"]
+                if so_base <= ea <= (so_base + so_size):
+                    in_mine_so = True
+                    break
+
+            self.trace_size += 1
+            if (not in_mine_so) or (ea in self.skip_functions):
+                if (self.trace_lr != 0) and (self.trace_step_into_count < self.trace_step_into_size):
+                    self.trace_step_into_count += 1
+                    return 0
+
+                if (self.trace_lr != 0) and (self.trace_step_into_count == self.trace_step_into_size):
+                    ida_dbg.enable_insn_trace(False)
+                    ida_dbg.enable_step_trace(False)
+                    ida_dbg.suspend_process()
+                    if self.trace_size > self.trace_total_size:
+                        self.trace_size = 0
+                        ida_dbg.request_clear_trace()
+                        ida_dbg.run_requests()
+
+                    ida_dbg.request_run_to(self.trace_lr & 0xFFFFFFFE)
+                    ida_dbg.run_requests()
+                    self.trace_lr = 0
+                    self.trace_step_into_count = 0
+                    return 0
+
+                if self.trace_lr == 0:
+                    self.trace_lr = my_get_reg_value("LR")
+            return 0
+
+    def dbg_run_to(self, pid, tid=0, ea=0):
+        # 打印调试信息，显示函数被调用时的pid和ea值
+        # print("dbg_run_to 0x%x pid=%d" % (ea, pid))
+        # 检查是否启用了行级跟踪
+        if self.line_trace:
+            # 启用指令级跟踪
+            ida_dbg.enable_insn_trace(True)
+            # 启用步进跟踪
+            ida_dbg.enable_step_trace(True)
+            # 请求继续执行进程
+            ida_dbg.request_continue_process()
+            # 运行所有挂起的调试请求
+            ida_dbg.run_requests()
+
+
+def unhook():
+    global debughook
+    # Remove an existing debug hook
+    try:
+        if debughook:
+            print("Removing previous hook ...")
+            debughook.unhook()
+            debughook.Logger.log_close()
+    except:
+        pass
+
+
+def starthook():
+    # 声明全局变量 debughook，以便在函数内部访问和修改它
+    global debughook
+    # 检查 debughook 是否为真（即是否已经初始化或启用）
+    if debughook:
+        # 如果 debughook 为真，则调用其 start_line_trace 方法开始行跟踪
+        debughook.start_line_trace()
+
+
+def main():
+    # 声明全局变量 debughook
+    global debughook
+    # 调用 unhook 函数，可能是为了取消之前的调试钩子
+    unhook()
+    # 初始化一个空列表，用于存储需要跳过的函数地址
+    skip_functions = []
+    # 初始化一个空列表，用于存储模块信息
+    modules_info = []
+    # 初始化起始地址为 0
+    start_ea = 0
+    # 初始化结束地址列表为空
+    end_ea = []
+    # 定义一个列表，包含需要处理的模块名称
+    so_modules = ["libhello-jni.so"]        # module name
+    # 遍历所有模块
+    for module in idc._get_modules():
+        # 获取模块的文件名
+        module_name = os.path.basename(module.name)
+        # 遍历需要处理的模块名称
+        for so_module in so_modules:
+            # 使用正则表达式忽略大小写搜索模块名称
+            if re.search(so_module, module_name, re.IGNORECASE):
+                # 打印模块信息
+                print("modules_info append %08X %s %08X" %
+                      (module.base, module.name, module.size))
+                # 如果模块名称匹配 "libhello-jni.so"
+                if module_name == "libhello-jni.so":
+                    # 将模块信息添加到 modules_info 列表
+                    modules_info.append(
+                        {"base": module.base, "size": module.size, "name": module.name})
+                    # 设置起始地址
+                    start_ea = (module.base + 0x1CFF0)      # start address
+                    # 设置结束地址列表
+                    end_ea = [((module.base + 0x1D6D4))]    # end address
+                    # 跳出内层循环
+                    break
+
+    # 为起始地址和结束地址设置断点
+    if start_ea:
+        set_breakpoint(start_ea)
+    if end_ea:
+        for ea in end_ea:
+            set_breakpoint(ea)
+
+    if skip_functions:
+        print("skip_functions")
+        for skip_function in skip_functions:
+            print("%08X" % skip_function)
+
+    debughook = MyDbgHook(modules_info, skip_functions, end_ea)
+
+    pass
+
+
+if __name__ == "__main__":
+    main()
+    pass
 ```

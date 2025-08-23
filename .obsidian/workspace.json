@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07 More A&D/03 Reverse.md",
+                "file": "09 CrackMe/00 Scratch.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 Reverse"
+              "title": "00 Scratch"
             }
           }
         ]
@@ -84,11 +84,13 @@
               "title": "书签"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "bdcab03c1ebed740",
@@ -150,13 +152,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "07 More A&D/03 Reverse.md",
+                "file": "09 CrackMe/00 Scratch.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "03 Reverse 的大纲"
+              "title": "00 Scratch 的大纲"
             }
           },
           {
@@ -178,7 +180,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -192,43 +195,46 @@
   },
   "active": "7db844d727965ce0",
   "lastOpenFiles": [
-    "07 More A&D/02 Pwn.md",
-    "09 CrackMe/06 ARM.md",
-    "07 More A&D/05 Mobile.md",
+    "assets/peFormat.png",
+    "09 CrackMe/00 Scratch.md",
     "05 Penetration Test/04 Web应用攻击.md",
     "07 More A&D/06 Web.md",
     "07 More A&D/03 Reverse.md",
-    "09 CrackMe/05 eBPF.md",
-    "09 CrackMe/02 IDAPython.md",
-    "09 CrackMe/04 linker.md",
-    "09 CrackMe/03 BDI.md",
+    "assets/SegmentSelector.png",
+    "assets/DescriptorTable.png",
+    "assets/DescriptorTable2.png",
+    "assets/screenshot.png",
+    "assets/registers.png",
     "09 CrackMe/01 IDA.md",
-    "08 Rust/07 常见集合.md",
-    "07 More A&D/04 Crypto.md",
-    "10 Basic",
-    "09 CrackMe/未命名",
-    "05 Penetration Test/18 破解.md",
-    "07 More A&D/01 Misc.md",
-    "06 practices/29 dawn.md",
-    "06 practices/16 Momentum.md",
+    "09 CrackMe/04 linker.md",
+    "09 CrackMe/05 eBPF.md",
+    "09 CrackMe/06 ARM.md",
+    "09 CrackMe/03 BDI.md",
+    "09 CrackMe/02 IDAPython.md",
+    "07 More A&D/05 Mobile.md",
+    "06 practices/14 Nagini.md",
+    "06 practices/11 Billu_b0x.md",
     "05 Penetration Test/11 权限提升.md",
     "03 Awesome Command Line/11 安全工具.md",
-    "04 Excellent Graphical Tools/03 Windows工具.md",
-    "06 practices/05 hard_socnet2.md",
-    "05 Penetration Test/05 缓冲区溢出.md",
-    "09 CrackMe",
-    "05 Penetration Test/09 传输后门.md",
-    "05 Penetration Test/10 杀毒规避.md",
-    "08 Rust/08 错误处理.md",
+    "06 practices/09 Vikings.md",
+    "06 practices/06 EvilBox1.md",
+    "06 practices/04 AdmX_new.md",
+    "06 practices/02 easy_cloudantivirus.md",
+    "06 practices/01 Medium_socialnetwork.md",
+    "06 practices/03 Chronos.md",
+    "08 Rust/88 实践.md",
     "08 Rust/99 练习.md",
+    "08 Rust/03 所有权.md",
+    "08 Rust/02 基础语法.md",
+    "10 Basic",
+    "09 CrackMe/未命名",
+    "09 CrackMe",
     "未命名.canvas",
     "0006.jpg",
-    "assets/registers.png",
     "Pasted image 20231228104747.png",
     "Pasted image 20230519150816.png",
     "Pasted image 20230519150813.png",
     "08 Rust",
-    "07 More A&D/未命名",
-    "assets/screenshot.png"
+    "07 More A&D/未命名"
   ]
 }

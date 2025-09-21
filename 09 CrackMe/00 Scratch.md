@@ -1698,8 +1698,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, // DLL模块句柄
 ```
 
 ##### 远程线程注入DLL
-
-通过 `LoadLibraryA` 函数在远程线程中加载dll
+- 修改Windows注册表
+- 静态修改pe文件的导入表（有签名验证时无法使用）
+- 通过 `LoadLibraryA` 函数在远程线程中加载dll
 
 ```cpp
 #include <stdio.h>
@@ -1829,3 +1830,214 @@ IO请求报文 hook 应用程序和驱动程序以IRP结构通讯
 #### TDI hook & NDIS hook
 
 驱动程序 内核级 网络通信hook
+
+### 花指令
+
+- 原始程序
+
+```cpp
+#include <stdio.h>
+
+// num * 2^power
+int power2( int num, int power );
+
+int main( void )
+{
+    printf_s( "3 times 2 to the power of 4 is %d\n", \
+              power2( 3, 4) );
+}
+
+__declspec(naked)
+int power2( int num, int power )
+{
+   __asm
+   {
+        push ebp
+        mov  ebp, esp
+        mov  eax, [ebp+8]     ; Get first argument
+        mov  ecx, [ebp+12]    ; Get second argument
+        shl  eax, cl
+        pop  ebp
+        ret
+   }
+}
+```
+
+- 无条件跳转指令后增加垃圾字节
+
+```cpp
+#include <stdio.h>
+
+// num * 2^power
+int power2( int num, int power );
+
+int main( void )
+{
+    printf_s( "3 times 2 to the power of 4 is %d\n", \
+              power2( 3, 4) );
+}
+
+__declspec(naked)
+int power2( int num, int power )
+{
+   __asm
+   {
+        push ebp
+        mov  ebp, esp
+        mov  eax, [ebp+8]     ; Get first argument
+        mov  ecx, [ebp+12]    ; Get second argument
+        jmp  label1
+        __emit 0xe9 // 线性反编译引擎会出错 后面都乱了 递归行进的引擎比如IDA能够识别
+    label1:
+        shl  eax, cl
+        pop  ebp
+        ret
+   }
+}
+```
+
+- 条件跳转指令后增加垃圾字节
+
+```cpp
+#include <stdio.h>
+
+// num * 2^power
+int power2( int num, int power );
+
+int main( void )
+{
+    printf_s( "3 times 2 to the power of 4 is %d\n", \
+              power2( 3, 4) );
+}
+
+__declspec(naked)
+int power2( int num, int power )
+{
+   __asm
+   {
+        push ebp
+        mov  ebp, esp
+        mov  eax, [ebp+8]     ; Get first argument
+        mov  ecx, [ebp+12]    ; Get second argument
+        jz   label1
+        jnz  label1
+        __emit 0xe9
+    label1:
+        shl  eax, cl
+        pop  ebp
+        ret
+   }
+}
+```
+
+```cpp
+#include <stdio.h>
+
+// num * 2^power
+int power2( int num, int power );
+
+int main( void )
+{
+    printf_s( "3 times 2 to the power of 4 is %d\n", \
+              power2( 3, 4) );
+}
+
+__declspec(naked)
+int power2( int num, int power )
+{
+   __asm
+   {
+        push ebp
+        mov  ebp, esp
+        mov  eax, [ebp+8]     ; Get first argument
+        mov  ecx, [ebp+12]    ; Get second argument
+        xor  ebx, ebx
+        test ebx, ebx
+        jz   label1
+        __emit 0xe9
+    label1:
+        shl  eax, cl
+        pop  ebp
+        ret
+   }
+}
+```
+
+- 直接修改栈中的返回地址
+
+```cpp
+#include <stdio.h>
+
+// num * 2^power
+int power2( int num, int power );
+
+int main( void )
+{
+    printf_s( "3 times 2 to the power of 4 is %d\n", \
+              power2( 3, 4) );
+}
+
+__declspec(naked)
+int power2( int num, int power )
+{
+   __asm
+   {
+        push ebp
+        mov  ebp, esp
+        mov  eax, [ebp+8]     ; Get first argument
+        mov  ecx, [ebp+12]    ; Get second argument
+        call label1
+        __emit 0xe9
+    label1:
+        add  DWORD PTR [esp], 7
+        ret
+        __emit 0xe9
+        shl  eax, cl
+        pop  ebp
+        ret
+   }
+}
+```
+
+### 脱壳
+
+- `SP` 平衡定律
+
+```
+OllyDbg脱壳案例
+
+脱壳前手动修改PE文件 关闭ASLR功能
+找到coff头中的characteristics 修改最低位baseRelocationsStripped为1
+找到可选头的DLLCharacteristics 修改第7位dynamicBase为0
+
+关闭ASLR后 运行一下试试 没问题的话使用OD调试
+pusha 指令运行前 SP寄存器值为0x0058FF20
+F8 单步步过后 SP寄存器值为0x0058FF00
+0x0058FF00 - 0x0058FF20 保存初始环境 当它们被弹出栈(访问)时 离真正的OEP就不远了
+对0x0058FF00下硬件断点 F9 继续运行程序
+现在距离真正的OEP已经不远了 取消栈上的硬件断点
+
+之后如果出现类似
+push 0x????????
+ret
+之类的指令序列 就是跳转到真正的OEP了
+F4 运行到指定位置
+
+使用OllyDump插件进行脱壳
+需要填入正确的起始地址 即模块加载基地址 可以在memory map窗口中查看 这里是0x00D00000
+还需要填入正确的OEP 默认为当前地址的RVA
+
+x64dbg脱壳和OD类似
+也需要先对PE文件进行修改 关闭ASLR
+然后运行到真正的OEP处 使用自带的Scylla进行dump
+dump之后 点击IAT Autosearch -> Get Imports 删除无效的引用
+最后修复dump文件的IAT表 得到最终的可执行文件
+```
+
+- 直接暴力搜索 `popa` 指令
+- 二次断点法 先对其它节下内存访问断点 再对 `.text` 节下内存访问断点
+- `SFX` 自解压分析
+- 异常计数器 记录程序启动到真正运行前的异常次数 从最后一次异常位置开始寻找OEP
+- 根据编译器特性 入口处会执行的函数(`GetVersion`等)下断点倒推
+- 跨段/节区的 `jmp` `ret` 等指令
+- 单步跟踪 板凳坐穿

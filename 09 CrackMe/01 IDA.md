@@ -585,3 +585,20 @@ IDA基本可以准确识别
 
 选中字符串所在位置
 Options菜单下选 `string literals` currently 右键新增 GBK 编码 选中 重新分析程序
+
+#### 虚表修复
+
+```cpp
+struct __cppobj C
+{
+  C_vtbl *__vftable /*VFT*/;
+};
+
+struct /*VFT*/ C_vtbl
+{
+  void (__cdecl *func)(C *this);
+};
+```
+
+类需要加 `__cppobj` , 虚表结构体名为 `CLASSNAME_vtbl` 。成员变量名为`__vftable` 。
+如果有多个虚表，则命令为`CLASSNAME_XXXX_vtbl` 如 `derived_0008_vtbl` ，其中0008表示偏移量。

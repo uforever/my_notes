@@ -1342,7 +1342,7 @@ java层: 转为native函数
 变为：& 0x80000 != 0
 ```
 
- ### objection
+ #### objection
 
 ```shell
 # 连接应用
@@ -2067,7 +2067,9 @@ static jint RegisterNatives(
 ```
 
 
-### 修改内核源码
+### 内核相关
+
+#### 改内核配置 重新编译内核
 
 ```shell
 # 加载编译环境
@@ -2080,17 +2082,8 @@ cat device/zuk/z2_plus/BoardConfig.mk
 
 # 切换到内核目录下
 cd kernel/zuk/msm8996/
-# find ./ -type f -name z2_plus_defconfig
-# 复制配置文件
+# 备份配置文件
 cp ./arch/arm64/configs/z2_plus_defconfig .config
-# 启动图形化配置界面
-make menuconfig
-# 先加载.config文件
-# 然后通过/查找目标配置
-# 我这里以CONFIG_KALLSYMS和CONFIG_KALLSYMS_ALL为例
-# 能够查到配置项所在的位置
-# 修改后覆盖保存.config
-# 备份原配置文件 使用.config进行替换
 
 ### !!!上述过程繁琐且不好用!!!
 # 还是先备份arch/arm64/configs/z2_plus_defconfig
@@ -2105,6 +2098,73 @@ make mrproper
 croot
 # 重新编译bootimage
 make bootimage
+```
+
+#### 可加载内核模块（LKM）
+
+```bash
+# 查看内核配置
+cat kernel/xiaomi/picasso/arch/arm64/configs/picasso_user_defconfig
+
+# 需要如下配置
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_MODVERSIONS=y
+
+# 重新编译内核 写入手机
+```
+
+`drivers` 目录下创建模块目录 `greet` 其中分别创建源码文件 `greet.c` 和 `Makefile`
+
+```cpp
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Zhang3");
+MODULE_DESCRIPTION("A Simple Hello World Kernel Module");
+
+static int __init greet_init(void) {
+    printk(KERN_INFO "Aloha, World!\n");
+    return 0;
+}
+
+static void __exit greet_exit(void) {
+    printk(KERN_INFO "CUUU\n");
+}
+
+module_init(greet_init);
+module_exit(greet_exit);
+```
+
+```makefile
+obj-m	+= greet.o
+```
+
+父目录 `drivers` 中的 `Makefile` 增加一行
+
+```makefile
+obj-y                   += greet/
+```
+
+编译后的产物位于 `crDroid13/out/target/product/picasso/obj/KERNEL_OBJ/drivers/greet`
+
+使用测试
+
+```bash
+adb push greet.ko /data/local/tmp
+
+insmod greet.ko # 安装模块
+
+lsmod # 列出模块
+# Module                  Size  Used by
+# greet                  20480  0
+
+dmesg # 查看内核日志
+dmesg | tail -n 10
+
+rmmod greet # 卸载模块
 ```
 ### unidbg
 
@@ -2623,3 +2683,14 @@ WebView JS接口调用Java代码示例 `jsi.html` 内容为 需要将它放到HT
 document.write("token: " + Android.getUserToken());
 </script>
 ```
+
+
+### ART
+
+#### C++内存布局
+
+- 可以将C++中的类，当作C中的结构体，成员函数不占用空间（虚表除外）。相较于普通函数，成员函数多了一个参数，第一个参数为对象指针。
+- 静态字段不占用对象内存，普通变量占用内存，但要考虑对齐
+- 虚函数和虚继承会多占用一个指针空间，指向虚表（32位4字节，64位下8字节）
+- 有一个虚继承，同时自己有虚函数，也只有一个虚表（自己的虚函数依次添加到继承的虚表中）。如果发生了覆盖，则以覆盖优先，不用在表项后继续添加。
+- 多个虚继承会有多个虚表，即占用不止一个指针空间。自己如果有虚函数，插入第一张虚表末尾。

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "09 CrackMe/00 Scratch.md",
+                "file": "07 More A&D/01 Misc.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "00 Scratch"
+              "title": "01 Misc"
             }
           }
         ]
@@ -88,8 +88,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "bdcab03c1ebed740",
@@ -151,13 +150,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "09 CrackMe/00 Scratch.md",
+                "file": "07 More A&D/01 Misc.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "00 Scratch 的大纲"
+              "title": "01 Misc 的大纲"
             }
           },
           {
@@ -179,8 +178,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -192,13 +190,14 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "6fc0fdf2f69044c3",
+  "active": "0784870a8a96b129",
   "lastOpenFiles": [
-    "09 CrackMe/01 IDA.md",
-    "09 CrackMe/02 IDAPython.md",
-    "09 CrackMe/00 Scratch.md",
-    "07 More A&D/06 Web.md",
+    "06 practices/09 Vikings.md",
     "07 More A&D/05 Mobile.md",
+    "07 More A&D/06 Web.md",
+    "09 CrackMe/01 IDA.md",
+    "09 CrackMe/00 Scratch.md",
+    "09 CrackMe/02 IDAPython.md",
     "assets/peFormat.png",
     "05 Penetration Test/04 Web应用攻击.md",
     "07 More A&D/03 Reverse.md",
@@ -215,7 +214,6 @@
     "06 practices/11 Billu_b0x.md",
     "05 Penetration Test/11 权限提升.md",
     "03 Awesome Command Line/11 安全工具.md",
-    "06 practices/09 Vikings.md",
     "06 practices/06 EvilBox1.md",
     "06 practices/04 AdmX_new.md",
     "06 practices/02 easy_cloudantivirus.md",

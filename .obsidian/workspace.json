@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07 More A&D/01 Misc.md",
+                "file": "07 More A&D/04 Crypto.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "01 Misc"
+              "title": "04 Crypto"
             }
           }
         ]
@@ -150,13 +150,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "07 More A&D/01 Misc.md",
+                "file": "07 More A&D/04 Crypto.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "01 Misc 的大纲"
+              "title": "04 Crypto 的大纲"
             }
           },
           {
@@ -192,6 +192,7 @@
   },
   "active": "0784870a8a96b129",
   "lastOpenFiles": [
+    "07 More A&D/01 Misc.md",
     "06 practices/09 Vikings.md",
     "07 More A&D/05 Mobile.md",
     "07 More A&D/06 Web.md",

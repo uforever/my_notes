@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07 More A&D/04 Crypto.md",
+                "file": "07 More A&D/06 Web.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 Crypto"
+              "title": "06 Web"
             }
           }
         ]
@@ -150,13 +150,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "07 More A&D/04 Crypto.md",
+                "file": "07 More A&D/06 Web.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "04 Crypto 的大纲"
+              "title": "06 Web 的大纲"
             }
           },
           {
@@ -192,16 +192,17 @@
   },
   "active": "0784870a8a96b129",
   "lastOpenFiles": [
-    "07 More A&D/01 Misc.md",
-    "06 practices/09 Vikings.md",
     "07 More A&D/05 Mobile.md",
     "07 More A&D/06 Web.md",
-    "09 CrackMe/01 IDA.md",
+    "05 Penetration Test/04 Web应用攻击.md",
     "09 CrackMe/00 Scratch.md",
+    "07 More A&D/03 Reverse.md",
+    "09 CrackMe/01 IDA.md",
+    "07 More A&D/04 Crypto.md",
+    "07 More A&D/01 Misc.md",
+    "06 practices/09 Vikings.md",
     "09 CrackMe/02 IDAPython.md",
     "assets/peFormat.png",
-    "05 Penetration Test/04 Web应用攻击.md",
-    "07 More A&D/03 Reverse.md",
     "assets/SegmentSelector.png",
     "assets/DescriptorTable.png",
     "assets/DescriptorTable2.png",
@@ -223,7 +224,6 @@
     "08 Rust/88 实践.md",
     "08 Rust/99 练习.md",
     "08 Rust/03 所有权.md",
-    "08 Rust/02 基础语法.md",
     "10 Basic",
     "09 CrackMe/未命名",
     "09 CrackMe",

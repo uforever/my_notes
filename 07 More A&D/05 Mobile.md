@@ -36,7 +36,7 @@ adb remount
 
 adb push 9a5ba575.0 /sdcard/
 adb shell
-z2_plus:/ # mv /sdcard/9a5ba575.0 /system/etc/security/cacerts/
+z2_plus:/ # mv /sdcard/Download/9a5ba575.0 /system/etc/security/cacerts/
 z2_plus:/ # chmod 644 /system/etc/security/cacerts/9a5ba575.0
 z2_plus:/ # touch -t 200901010800 /system/etc/security/cacerts/9a5ba575.0
 z2_plus:/ # reboot

